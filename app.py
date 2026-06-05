@@ -26,7 +26,6 @@ CORS(app, supports_credentials=True)
 ET = pytz.timezone('US/Eastern')
 
 # ---------------------------- MODELOS ---------------------------------
-
 class Usuario(db.Model):
     __tablename__ = 'usuarios'
     telefono = db.Column(db.String, primary_key=True)
@@ -53,25 +52,23 @@ class Loteria(db.Model):
     hora_resultado = db.Column(db.Time, nullable=False)
     zona_horaria = db.Column(db.String, default='US/Eastern')
     activa = db.Column(db.Boolean, default=True)
-    cuota_centena = db.Column(db.Float, default=150.0)   # cuotas específicas por lotería? Pueden ser globales desde tabla cuotas. Para simplificar, usamos tabla cuotas global.
-    # Mejor usamos tabla cuotas aparte
 
 class Jugada(db.Model):
     __tablename__ = 'jugadas'
-    id = db.Column(db.String, primary_key=True)  # UUID8
+    id = db.Column(db.String, primary_key=True)
     telefono = db.Column(db.String, db.ForeignKey('usuarios.telefono'), nullable=False)
     loteria_id = db.Column(db.Integer, db.ForeignKey('loterias.id'), nullable=False)
-    fecha_tiro = db.Column(db.Date, nullable=False)  # día del sorteo
-    modalidad = db.Column(db.String, nullable=False)  # centena, fijo, corrido_p3, corrido_p4_ab, corrido_p4_cd, parle
-    numero_principal = db.Column(db.String, nullable=False)  # '472', '72', '38'
-    numero_parle = db.Column(db.String, nullable=True)      # solo parle
-    tipo_parle_1 = db.Column(db.String, nullable=True)      # fijo / corrido
+    fecha_tiro = db.Column(db.Date, nullable=False)
+    modalidad = db.Column(db.String, nullable=False)
+    numero_principal = db.Column(db.String, nullable=False)
+    numero_parle = db.Column(db.String, nullable=True)
+    tipo_parle_1 = db.Column(db.String, nullable=True)
     tipo_parle_2 = db.Column(db.String, nullable=True)
     monto = db.Column(db.Float, nullable=False)
     cuota_aplicada = db.Column(db.Float, nullable=False)
     ganancia_potencial = db.Column(db.Float, nullable=False)
     fecha_apuesta = db.Column(db.DateTime, default=datetime.utcnow)
-    estado = db.Column(db.String, default='pendiente')  # pendiente, ganada, perdida
+    estado = db.Column(db.String, default='pendiente')
     monto_ganado = db.Column(db.Float, default=0.0)
 
 class Resultado(db.Model):
@@ -79,9 +76,9 @@ class Resultado(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     loteria_id = db.Column(db.Integer, db.ForeignKey('loterias.id'), nullable=False)
     fecha = db.Column(db.Date, nullable=False)
-    numero_ganador_pick3 = db.Column(db.String(3), nullable=True)   # ejemplo '472'
-    numero_ganador_pick4 = db.Column(db.String(4), nullable=True)   # ejemplo '3815'
-    fuente = db.Column(db.String, default='manual')  # auto / manual
+    numero_ganador_pick3 = db.Column(db.String(3), nullable=True)
+    numero_ganador_pick4 = db.Column(db.String(4), nullable=True)
+    fuente = db.Column(db.String, default='manual')
     procesado = db.Column(db.Boolean, default=False)
     fecha_procesado = db.Column(db.DateTime, nullable=True)
 
@@ -89,7 +86,7 @@ class Transaccion(db.Model):
     __tablename__ = 'transacciones'
     id = db.Column(db.Integer, primary_key=True)
     telefono = db.Column(db.String, db.ForeignKey('usuarios.telefono'), nullable=False)
-    tipo = db.Column(db.String, nullable=False)  # recarga, apuesta, premio, retiro
+    tipo = db.Column(db.String, nullable=False)
     monto = db.Column(db.Float, nullable=False)
     descripcion = db.Column(db.String, nullable=True)
     metodo_pago = db.Column(db.String, nullable=True)
@@ -103,19 +100,19 @@ class SolicitudRegistro(db.Model):
     telefono_whatsapp = db.Column(db.String, unique=True, nullable=False)
     codigo = db.Column(db.String(6), nullable=True)
     codigo_expira = db.Column(db.DateTime, nullable=True)
-    estado = db.Column(db.String, default='pendiente')  # pendiente, aprobado, rechazado
+    estado = db.Column(db.String, default='pendiente')
     fecha_solicitud = db.Column(db.DateTime, default=datetime.utcnow)
     aprobado_por = db.Column(db.String, db.ForeignKey('usuarios.telefono'), nullable=True)
 
 class Notificacion(db.Model):
     __tablename__ = 'notificaciones'
     id = db.Column(db.Integer, primary_key=True)
-    destinatario_rol = db.Column(db.String, nullable=False)  # admin, dueno, o telefono
-    tipo = db.Column(db.String, nullable=False)  # registro, ganador, sistema
+    destinatario_rol = db.Column(db.String, nullable=False)
+    tipo = db.Column(db.String, nullable=False)
     mensaje = db.Column(db.Text, nullable=False)
     leida = db.Column(db.Boolean, default=False)
     fecha = db.Column(db.DateTime, default=datetime.utcnow)
-    datos_extra = db.Column(db.Text, nullable=True)  # JSON
+    datos_extra = db.Column(db.Text, nullable=True)
 
 class Sesion(db.Model):
     __tablename__ = 'sesiones'
@@ -138,9 +135,9 @@ class AlertaSeguridad(db.Model):
     __tablename__ = 'alertas_seguridad'
     id = db.Column(db.Integer, primary_key=True)
     telefono = db.Column(db.String, db.ForeignKey('usuarios.telefono'), nullable=False)
-    tipo = db.Column(db.String, nullable=False)  # multiples_ips, sin_actividad, etc.
+    tipo = db.Column(db.String, nullable=False)
     descripcion = db.Column(db.String, nullable=False)
-    nivel = db.Column(db.String, default='media')  # baja, media, alta
+    nivel = db.Column(db.String, default='media')
     resuelta = db.Column(db.Boolean, default=False)
     fecha = db.Column(db.DateTime, default=datetime.utcnow)
 
@@ -154,7 +151,6 @@ class Cuota(db.Model):
     fecha_actualizacion = db.Column(db.DateTime, default=datetime.utcnow)
 
 # ---------------------------- FUNCIONES AUXILIARES --------------------------------
-
 def hash_password(passwd):
     salt = bcrypt.gensalt()
     return bcrypt.hashpw(passwd.encode('utf-8'), salt).decode('utf-8')
@@ -168,10 +164,6 @@ def generar_codigo():
 
 def obtener_ip():
     return request.remote_addr
-
-def registrar_accion(telefono, accion, detalle=None):
-    # Auditoría simple (opcional)
-    pass  # Podemos crear tabla auditoría si se desea, por ahora lo dejamos así
 
 def calcular_estado_loteria(loteria):
     ahora = datetime.now(ET).time()
@@ -192,7 +184,7 @@ def calcular_estado_loteria(loteria):
 
 def obtener_cuota(modalidad, tipo_parle1=None, tipo_parle2=None):
     if modalidad == 'parle':
-        clave = f"parle_{tipo_parle1[0]}{tipo_parle2[0]}"  # ff, fc, cc
+        clave = f"parle_{tipo_parle1[0]}{tipo_parle2[0]}"
         cu = Cuota.query.filter_by(modalidad=clave).first()
     else:
         cu = Cuota.query.filter_by(modalidad=modalidad).first()
@@ -200,10 +192,8 @@ def obtener_cuota(modalidad, tipo_parle1=None, tipo_parle2=None):
 
 def procesar_ganadores(loteria_id, fecha, pick3, pick4):
     jugadas = Jugada.query.filter_by(loteria_id=loteria_id, fecha_tiro=fecha, estado='pendiente').all()
-    total_ganado = 0.0
     for jug in jugadas:
         gano = False
-        ganancia = 0.0
         modalidad = jug.modalidad
         if modalidad == 'centena':
             if pick3 == jug.numero_principal:
@@ -225,7 +215,6 @@ def procesar_ganadores(loteria_id, fecha, pick3, pick4):
             if sorted(jug.numero_principal) == sorted(cd):
                 gano = True
         elif modalidad == 'parle':
-            # Verificar número1
             gano1 = False
             n1 = jug.numero_principal
             t1 = jug.tipo_parle_1
@@ -237,7 +226,6 @@ def procesar_ganadores(loteria_id, fecha, pick3, pick4):
                 fijo_real = pick3[1:] if pick3 else ''
                 if sorted(n1) == sorted(fijo_real):
                     gano1 = True
-            # Verificar número2
             gano2 = False
             n2 = jug.numero_parle
             t2 = jug.tipo_parle_2
@@ -253,30 +241,19 @@ def procesar_ganadores(loteria_id, fecha, pick3, pick4):
             ganancia = jug.monto * jug.cuota_aplicada
             jug.estado = 'ganada'
             jug.monto_ganado = ganancia
-            # Actualizar saldo usuario
             user = Usuario.query.get(jug.telefono)
             if user:
                 user.saldo += ganancia
                 trans = Transaccion(telefono=user.telefono, tipo='premio', monto=ganancia, descripcion=f'Premio {modalidad} lotería {loteria_id}')
                 db.session.add(trans)
-            total_ganado += ganancia
         else:
             jug.estado = 'perdida'
     db.session.commit()
-    # Actualizar resultado como procesado
     res = Resultado.query.filter_by(loteria_id=loteria_id, fecha=fecha).first()
     if res:
         res.procesado = True
         res.fecha_procesado = datetime.utcnow()
         db.session.commit()
-    return total_ganado
-
-# ---------------------------- SCRAPING ---------------------------------
-
-def scrapear_resultado(loteria):
-    # Implementación simplificada para demostración
-    # En producción habría lógica específica por estado
-    pass
 
 def job_scraping():
     hoy = date.today()
@@ -285,15 +262,13 @@ def job_scraping():
         hora_res = lot.hora_resultado
         ahora = datetime.now(ET)
         if ahora.time() > hora_res and ahora.hour < 23:
-            # Si ya pasó la hora de resultado y no hay resultado
             res = Resultado.query.filter_by(loteria_id=lot.id, fecha=hoy).first()
             if not res or res.numero_ganador_pick3 is None:
-                # Intentar scraping
                 try:
-                    # Llamar función específica (simulada)
                     pick3, pick4 = None, None
+                    # Simulación de scraping (reemplazar con llamadas reales)
                     if lot.estado_usa == 'Florida':
-                        # Simulación: obtener número de un sitio (placeholder)
+                        # Aquí iría el scraping real
                         pick3 = "472"
                         pick4 = "3815"
                     else:
@@ -318,8 +293,6 @@ scheduler.add_job(func=job_scraping, trigger=IntervalTrigger(minutes=30), id='sc
 scheduler.start()
 
 # ---------------------------- RUTAS API ---------------------------------
-
-# ---------- Públicas (sin sesión) ----------
 @app.route('/')
 def index():
     return send_from_directory('.', 'index.html')
@@ -331,10 +304,8 @@ def solicitud_registro():
     telefono_whatsapp = data.get('telefono_whatsapp', '').strip()
     if not nombre or not telefono_whatsapp:
         return jsonify({"error": "Nombre y número de WhatsApp son obligatorios"}), 400
-    # Validar formato simple (código país + número)
     if not re.match(r'^\d{10,15}$', telefono_whatsapp):
         return jsonify({"error": "Formato de teléfono inválido. Solo números, código país incluido (ej: 13055551234)"}), 400
-    # Evitar duplicados de solicitud pendiente o usuario ya existente
     existente = SolicitudRegistro.query.filter_by(telefono_whatsapp=telefono_whatsapp, estado='pendiente').first()
     if existente:
         return jsonify({"error": "Ya tienes una solicitud pendiente. Espera la aprobación."}), 400
@@ -344,7 +315,6 @@ def solicitud_registro():
     solicitud = SolicitudRegistro(nombre=nombre, telefono_whatsapp=telefono_whatsapp)
     db.session.add(solicitud)
     db.session.commit()
-    # Notificar a admins y dueño
     admins = Usuario.query.filter(Usuario.rol.in_(['admin', 'dueño'])).all()
     for admin in admins:
         notif = Notificacion(
@@ -369,8 +339,7 @@ def verificar_codigo():
         return jsonify({"error": "Código incorrecto."}), 400
     if solicitud.codigo_expira and datetime.utcnow() > solicitud.codigo_expira:
         return jsonify({"error": "El código ha expirado. Solicita un nuevo código al administrador."}), 400
-    # Crear usuario
-    hashed = hash_password(telefono[-4:])  # contraseña temporal: últimos 4 dígitos (debería cambiarla después)
+    hashed = hash_password(telefono[-4:])
     nuevo_usuario = Usuario(
         telefono=telefono,
         password=hashed,
@@ -384,7 +353,6 @@ def verificar_codigo():
     db.session.add(nuevo_usuario)
     solicitud.estado = 'aprobado'
     db.session.commit()
-    # Iniciar sesión automáticamente
     session['user'] = {'telefono': nuevo_usuario.telefono, 'nombre': nuevo_usuario.nombre, 'rol': nuevo_usuario.rol}
     return jsonify({"exito": True, "mensaje": "Cuenta activada. Ya puedes apostar.", "usuario": {"telefono": nuevo_usuario.telefono, "nombre": nuevo_usuario.nombre, "rol": nuevo_usuario.rol}})
 
@@ -396,24 +364,20 @@ def login():
     ip = obtener_ip()
     usuario = Usuario.query.get(telefono)
     if not usuario or not check_password(password, usuario.password):
-        # Registrar intento fallido
         intento = IntentoLogin(telefono=telefono, ip_address=ip, exitoso=False)
         db.session.add(intento)
         db.session.commit()
         return jsonify({"error": "Teléfono o contraseña incorrectos"}), 401
     if not usuario.activo:
         return jsonify({"error": "Usuario bloqueado. Contacta al administrador."}), 403
-    # Registrar sesión exitosa
     intento_exitoso = IntentoLogin(telefono=telefono, ip_address=ip, exitoso=True)
     db.session.add(intento_exitoso)
-    # Crear sesión activa
     nueva_sesion = Sesion(telefono=telefono, ip_address=ip)
     db.session.add(nueva_sesion)
     usuario.ultimo_login = datetime.utcnow()
     usuario.total_sesiones += 1
     db.session.commit()
     session['user'] = {'telefono': usuario.telefono, 'nombre': usuario.nombre, 'rol': usuario.rol}
-    # Determinar vistas según rol
     vistas = ['loterias']
     if usuario.rol == 'jugador':
         vistas += ['historial']
@@ -425,14 +389,12 @@ def login():
 
 @app.route('/api/logout', methods=['POST'])
 def logout():
-    # Cerrar sesión activa
     if 'user' in session:
         telefono = session['user']['telefono']
         sesion_activa = Sesion.query.filter_by(telefono=telefono, fecha_fin=None).order_by(Sesion.fecha_inicio.desc()).first()
         if sesion_activa:
             sesion_activa.fecha_fin = datetime.utcnow()
             sesion_activa.duracion_minutos = int((sesion_activa.fecha_fin - sesion_activa.fecha_inicio).total_seconds() / 60)
-            # Actualizar tiempo total del usuario
             usuario = Usuario.query.get(telefono)
             if usuario:
                 usuario.tiempo_total_minutos += sesion_activa.duracion_minutos
@@ -461,7 +423,6 @@ def cambiar_password():
     db.session.commit()
     return jsonify({"exito": True})
 
-# ---------- Loterías ----------
 @app.route('/api/loterias', methods=['GET'])
 def listar_loterias():
     if 'user' not in session:
@@ -481,13 +442,11 @@ def listar_loterias():
             "hora_cierre": lot.hora_cierre.strftime('%H:%M'),
             "estado": estado,
             "resultado_hoy": numero_hoy,
-            "activa": lot.activa,
-            "cuota_centena": 150  # por defecto, se puede obtener de tabla cuotas
+            "activa": lot.activa
         }
         if rol in ['admin', 'dueño']:
-            # Calcular total apostado hoy en esta lotería
             total_apostado = db.session.query(db.func.sum(Jugada.monto)).filter(Jugada.loteria_id==lot.id, Jugada.fecha_tiro==date.today()).scalar() or 0
-            item["total_apostado"] = total_apostado
+            item["total_apostado"] = float(total_apostado)
         resultado.append(item)
     return jsonify(resultado)
 
@@ -506,7 +465,6 @@ def loterias_admin():
             "hora_cierre": lot.hora_cierre.strftime('%H:%M'),
             "hora_resultado": lot.hora_resultado.strftime('%H:%M'),
             "activa": lot.activa,
-            "cuota_centena": 150,
             "resultado_pick3": res_hoy.numero_ganador_pick3 if res_hoy else None,
             "resultado_pick4": res_hoy.numero_ganador_pick4 if res_hoy else None
         })
@@ -533,11 +491,9 @@ def actualizar_loteria(id):
 def cerrar_loteria_hoy(id):
     if 'user' not in session or session['user']['rol'] not in ['admin', 'dueño']:
         return jsonify({"error": "No autorizado"}), 403
-    # Implementación simple: cambiar temporalmente la hora de cierre para hoy?
-    # O guardar en una tabla aparte. Por simplicidad, no implementamos cierre manual hoy en este código base.
+    # Simulación: podríamos crear un registro de cierre excepcional
     return jsonify({"exito": True, "mensaje": "Cierre manual registrado (simulado)"})
 
-# ---------- Apuestas ----------
 @app.route('/api/apostar', methods=['POST'])
 def apostar():
     if 'user' not in session:
@@ -550,8 +506,6 @@ def apostar():
     numero_parle = data.get('numero_parle', '').strip() if modalidad == 'parle' else None
     tipo_parle_1 = data.get('tipo_parle_1') if modalidad == 'parle' else None
     tipo_parle_2 = data.get('tipo_parle_2') if modalidad == 'parle' else None
-
-    # Validaciones
     if not loteria_id or not modalidad or not numero_principal or monto <= 0:
         return jsonify({"error": "Datos incompletos"}), 400
     loteria = Loteria.query.get(loteria_id)
@@ -563,7 +517,6 @@ def apostar():
     user = Usuario.query.get(session['user']['telefono'])
     if user.saldo < monto:
         return jsonify({"error": "Saldo insuficiente"}), 400
-    # Obtener cuota
     if modalidad == 'parle':
         cuota = obtener_cuota('parle', tipo_parle_1, tipo_parle_2)
     else:
@@ -571,7 +524,6 @@ def apostar():
     if cuota == 1:
         return jsonify({"error": "Modalidad no válida o cuota no configurada"}), 400
     ganancia_potencial = monto * cuota
-    # Crear jugada
     jugada_id = str(uuid.uuid4())[:8]
     nueva = Jugada(
         id=jugada_id,
@@ -587,7 +539,6 @@ def apostar():
         cuota_aplicada=cuota,
         ganancia_potencial=ganancia_potencial
     )
-    # Descontar saldo
     user.saldo -= monto
     trans = Transaccion(telefono=user.telefono, tipo='apuesta', monto=-monto, descripcion=f'{modalidad} ${monto} en {loteria.nombre}')
     db.session.add(trans)
@@ -623,7 +574,6 @@ def saldo():
     user = Usuario.query.get(session['user']['telefono'])
     return jsonify({"saldo": user.saldo})
 
-# ---------- Resultados manuales y procesamiento ----------
 @app.route('/api/resultado/manual', methods=['POST'])
 def resultado_manual():
     if 'user' not in session or session['user']['rol'] not in ['admin', 'dueño']:
@@ -646,7 +596,6 @@ def resultado_manual():
         res.fuente = 'manual'
         res.procesado = False
     db.session.commit()
-    # Procesar ganadores
     procesar_ganadores(loteria_id, fecha, pick3, pick4)
     return jsonify({"exito": True})
 
@@ -662,7 +611,6 @@ def reprocesar_ganadores():
     procesar_ganadores(res.loteria_id, res.fecha, res.numero_ganador_pick3, res.numero_ganador_pick4)
     return jsonify({"exito": True})
 
-# ---------- Administración de usuarios y solicitudes ----------
 @app.route('/api/solicitudes-registro', methods=['GET'])
 def listar_solicitudes():
     if 'user' not in session or session['user']['rol'] not in ['admin', 'dueño']:
@@ -683,7 +631,6 @@ def aprobar_solicitud(id):
     solicitud.codigo_expira = datetime.utcnow() + timedelta(minutes=30)
     solicitud.aprobado_por = session['user']['telefono']
     db.session.commit()
-    # Generar enlace de WhatsApp
     mensaje = f"Hola {solicitud.nombre} 👋%0A%0ATu código de registro para *La Bolita Cubana* es:%0A%0A*{codigo}*%0A%0AEste código expira en 30 minutos.%0ANo lo compartas con nadie."
     url = f"https://wa.me/{solicitud.telefono_whatsapp}?text={mensaje}"
     return jsonify({"exito": True, "url_whatsapp": url, "codigo": codigo, "expira": solicitud.codigo_expira.isoformat()})
@@ -773,14 +720,12 @@ def recargar_saldo():
     db.session.commit()
     return jsonify({"exito": True, "nuevo_saldo": usuario.saldo})
 
-# ---------- Reportes ----------
 @app.route('/api/reportes/diario', methods=['GET'])
 def reporte_diario():
     if 'user' not in session or session['user']['rol'] not in ['admin', 'dueño']:
         return jsonify({"error": "No autorizado"}), 403
     fecha_str = request.args.get('fecha', date.today().isoformat())
     fecha = datetime.strptime(fecha_str, '%Y-%m-%d').date()
-    # Agrupar por lotería
     resultados = db.session.query(
         Jugada.loteria_id,
         db.func.sum(Jugada.monto).label('total_apostado'),
@@ -797,7 +742,6 @@ def reporte_diario():
         })
     return jsonify(reporte)
 
-# ---------- Panel Dueño exclusivo ----------
 @app.route('/api/administradores', methods=['POST'])
 def crear_admin():
     if 'user' not in session or session['user']['rol'] != 'dueño':
@@ -822,7 +766,7 @@ def eliminar_admin(telefono):
     admin = Usuario.query.get(telefono)
     if not admin or admin.rol != 'admin':
         return jsonify({"error": "No es un administrador"}), 404
-    admin.rol = 'jugador'  # degradar a jugador
+    admin.rol = 'jugador'
     db.session.commit()
     return jsonify({"exito": True})
 
@@ -849,7 +793,6 @@ def actualizar_cuota():
     db.session.commit()
     return jsonify({"exito": True})
 
-# ---------- Seguridad y auditoría ----------
 @app.route('/api/admin/usuario/<telefono>/auditoria', methods=['GET'])
 def auditoria_usuario(telefono):
     if 'user' not in session or session['user']['rol'] not in ['admin', 'dueño']:
@@ -858,7 +801,6 @@ def auditoria_usuario(telefono):
     if not usuario:
         return jsonify({"error": "Usuario no encontrado"}), 404
     sesiones = Sesion.query.filter_by(telefono=telefono).order_by(Sesion.fecha_inicio.desc()).limit(10).all()
-    intentos = IntentoLogin.query.filter_by(telefono=telefono).order_by(IntentoLogin.fecha.desc()).limit(10).all()
     alertas = AlertaSeguridad.query.filter_by(telefono=telefono, resuelta=False).all()
     total_apostado = db.session.query(db.func.sum(Jugada.monto)).filter_by(telefono=telefono, estado='pendiente').scalar() or 0
     total_ganado = db.session.query(db.func.sum(Jugada.monto_ganado)).filter_by(telefono=telefono, estado='ganada').scalar() or 0
@@ -869,24 +811,24 @@ def auditoria_usuario(telefono):
         "alertas": [{"tipo": a.tipo, "descripcion": a.descripcion, "nivel": a.nivel} for a in alertas]
     })
 
-# Si no existe, crear cuotas iniciales al iniciar la app
+# ------------------------ INICIALIZACIÓN DE BASE DE DATOS ------------------------
 with app.app_context():
     db.create_all()
-    # Crear cuotas si no existen
-    cuotas_iniciales = [
-        ('centena', 150, 'Pick 3 - 3 dígitos exactos'),
-        ('fijo', 70, 'Pick 3 - últimos 2 dígitos exactos'),
-        ('corrido_p3', 35, 'Pick 3 - 2 dígitos cualquier orden'),
-        ('corrido_p4_ab', 35, 'Pick 4 - primeros 2 dígitos corrido'),
-        ('corrido_p4_cd', 35, 'Pick 4 - últimos 2 dígitos corrido'),
-        ('parle_ff', 400, 'Parle fijo + fijo'),
-        ('parle_fc', 150, 'Parle fijo + corrido'),
-        ('parle_cc', 80, 'Parle corrido + corrido')
+    # Insertar cuotas base
+    cuotas_base = [
+        ('centena', 150, 'Pick 3 exacto'),
+        ('fijo', 70, 'Pick 3 últimos 2 dígitos exactos'),
+        ('corrido_p3', 35, 'Pick 3 2 dígitos cualquier orden'),
+        ('corrido_p4_ab', 35, 'Pick 4 primeros 2 corrido'),
+        ('corrido_p4_cd', 35, 'Pick 4 últimos 2 corrido'),
+        ('parle_ff', 400, 'Parle fijo+fijo'),
+        ('parle_fc', 150, 'Parle fijo+corrido'),
+        ('parle_cc', 80, 'Parle corrido+corrido')
     ]
-    for mod, mult, desc in cuotas_iniciales:
+    for mod, mult, desc in cuotas_base:
         if not Cuota.query.filter_by(modalidad=mod).first():
             db.session.add(Cuota(modalidad=mod, multiplicador=mult, descripcion=desc))
-    # Crear loterías base si no existen
+    # Insertar loterías base
     loterias_base = [
         ('Georgia Día', 'Georgia', 'dia', '08:00', '12:00', '12:29'),
         ('New York Día', 'New York', 'dia', '08:00', '14:00', '14:30'),
@@ -908,7 +850,7 @@ with app.app_context():
                 hora_resultado=datetime.strptime(resultado, '%H:%M').time()
             )
             db.session.add(lot)
-    # Crear usuario dueño por defecto si no existe (cambiar contraseña después)
+    # Crear dueño por defecto
     if not Usuario.query.filter_by(rol='dueño').first():
         dueño = Usuario(telefono='5550000000', password=hash_password('admin123'), nombre='Dueño', rol='dueño', activo=True)
         db.session.add(dueño)
