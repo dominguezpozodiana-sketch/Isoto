@@ -1,243 +1,533 @@
-<!-- index.html -->
 <!DOCTYPE html>
-<html>
-  <head>
-    <base target="_top">
+<html lang="es">
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>La Bolita Cubana</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
-      body { background-color: #f0f2f5; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-      .app-container { max-width: 450px; margin: 0 auto; background: white; min-height: 100vh; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-      .nav-tab-bar { background: #111111; color: white; border-top: 1px solid #222; }
-      .vista-seccion { display: none; padding: 20px; }
-      .vista-seccion.activa { display: block; }
-      .input-group-text { background-color: #e9ecef; font-weight: bold; }
+        body { background: #f0f2f5; font-family: 'Segoe UI', Roboto, sans-serif; }
+        .app-container { max-width: 500px; margin: 0 auto; background: white; min-height: 100vh; box-shadow: 0 0 20px rgba(0,0,0,0.1); }
+        .nav-tab-bar { background: #111; color: white; position: sticky; bottom: 0; z-index: 100; }
+        .vista { display: none; padding: 20px; }
+        .vista.activa { display: block; }
+        .card-loteria { cursor: pointer; transition: 0.2s; border-left: 4px solid #28a745; }
+        .card-loteria.cerrada { border-left-color: #dc3545; opacity: 0.7; }
+        .card-loteria.proximamente { border-left-color: #ffc107; }
+        .badge-estado { font-size: 0.7rem; }
+        .notificacion-badge { position: relative; }
+        .notificacion-count { position: absolute; top: -5px; right: -10px; background: red; color: white; border-radius: 50%; padding: 2px 6px; font-size: 10px; }
+        .sombra { box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .modalidad-btn { margin: 5px; }
+        .active-modalidad { background-color: #007bff !important; color: white; }
+        .toast-container { position: fixed; bottom: 70px; left: 50%; transform: translateX(-50%); z-index: 1050; }
     </style>
-  </head>
-  <body>
-
-    <div class="app-container d-flex flex-column justify-content-between">
-      
-      <header class="bg-dark text-white text-center py-3 position-relative">
-        <h5 class="mb-0">🇨🇺 La Bolita Cubana 🎲</h5>
-      </header>
-
-      <main class="flex-grow-1">
-        
-        <!-- PANTALLA DE INICIO DE SESIÓN -->
-        <div id="vista-login" class="p-4">
-          <div class="text-center my-4">
-            <h3 class="fw-bold text-primary">Iniciar Sesión</h3>
-            <p class="text-muted small">Ingresa tus datos de acceso</p>
-          </div>
-          
-          <div class="mb-3">
-            <label class="form-label fw-semibold">Número Móvil</label>
-            <div class="input-group">
-              <span class="input-group-text">+53</span>
-              <input type="text" id="login-telefono" class="form-control form-control-lg" placeholder="5XXXXXXX" inputmode="numeric">
+</head>
+<body>
+<div class="app-container">
+    <!-- Barra superior dinámica -->
+    <nav class="navbar navbar-dark bg-dark px-3">
+        <span class="navbar-brand">🎲 La Bolita Cubana</span>
+        <div class="d-flex gap-3">
+            <div id="notificacionesIcono" class="notificacion-badge text-white" style="cursor:pointer; display:none;">
+                <i class="fa-regular fa-bell"></i>
+                <span id="notificacionesCount" class="notificacion-count">0</span>
             </div>
-            <div class="form-text text-muted">Ejemplo: 52345678 (8 dígitos)</div>
-          </div>
-
-          <div class="mb-4">
-            <label class="form-label fw-semibold">Contraseña</label>
-            <input type="password" id="login-password" class="form-control form-control-lg" placeholder="••••••••">
-          </div>
-
-          <button class="btn btn-primary btn-lg w-100 mb-3" onclick="iniciarSesion()">Entrar al Sistema</button>
-          
-          <div id="login-error" class="alert alert-danger text-center p-2" style="display: none;"></div>
+            <div id="userName" class="text-white small"></div>
+            <button id="logoutBtn" class="btn btn-sm btn-outline-light" style="display:none;">Salir</button>
         </div>
+    </nav>
 
-        <div id="vista-inicio" class="vista-seccion">
-          <h4>¡Hola, <span id="user-name" class="text-primary fw-bold"></span>!</h4>
-          <p class="text-muted">Bienvenido al sistema oficial de gestión de jugadas.</p>
-          <hr>
-          <div class="card p-3 bg-light">
-            <h6>📢 Avisos del Administrador</h6>
-            <p class="small text-secondary mb-0">Las listas cierran 15 minutos antes del tiro. Asegúrate de reportar tus pagos a tiempo.</p>
-          </div>
+    <!-- Contenedor de vistas -->
+    <div id="vista-login" class="vista activa">
+        <div class="p-4">
+            <h3 class="text-center mb-4">Iniciar Sesión</h3>
+            <input type="text" id="loginTel" class="form-control mb-2" placeholder="Teléfono (ej: 5550000000)">
+            <input type="password" id="loginPass" class="form-control mb-2" placeholder="Contraseña">
+            <button id="btnLogin" class="btn btn-primary w-100">Entrar</button>
+            <hr>
+            <p class="text-center">¿Nuevo? <a href="#" id="showRegistroLink">Solicitar registro</a></p>
+            <div id="loginError" class="alert alert-danger mt-2 d-none"></div>
         </div>
-
-        <div id="vista-jugar" class="vista-seccion">
-          <h4 class="fw-bold mb-3">🎲 Registrar Nueva Jugada</h4>
-          <div class="card p-3 shadow-sm mb-3">
-            <div class="mb-3">
-              <label class="form-label fw-semibold">Número a Jugar (00 - 99)</label>
-              <input type="number" id="num-bolita" class="form-control form-control-lg text-center fw-bold text-success" style="font-size: 24px;" min="0" max="99" placeholder="00">
-            </div>
-            <div class="mb-3">
-              <label class="form-label fw-semibold">Monto de Apuesta ($)</label>
-              <input type="number" id="monto-bolita" class="form-control form-control-lg text-center" min="1" placeholder="Monto en CUP/USD">
-            </div>
-            <button class="btn btn-success btn-lg w-100" onclick="enviarJugada()">Enviar Ficha</button>
-          </div>
-        </div>
-
-        <div id="vista-admin_control" class="vista-seccion">
-          <h4 class="text-danger fw-bold mb-3">⚡ Panel de Control (Creador)</h4>
-          <div class="d-grid gap-2">
-            <button class="btn btn-danger btn-lg" onclick="alert('Bloqueando recepción... (demo)')">🔒 Bloquear Tiros (Cierre)</button>
-            <button class="btn btn-dark btn-lg" onclick="alert('Abriendo recepción... (demo)')">🔓 Abrir Tiros (Nuevo Día)</button>
-            <button class="btn btn-warning btn-lg" onclick="alert('Ingresar números ganadores... (demo)')">🏆 Digitar Números Ganadores</button>
-          </div>
-        </div>
-        
-        <div id="vista-admin_usuarios" class="vista-seccion">
-          <h4 class="fw-bold text-dark mb-3">👥 Control de Usuarios</h4>
-          <p class="text-muted small">Aprueba registros pendientes o bloquea usuarios.</p>
-          
-          <button class="btn btn-outline-primary btn-sm w-100 mb-3" onclick="cargarListaUsuarios()">🔄 Actualizar Lista</button>
-          
-          <div id="contenedor-usuarios" class="d-flex flex-column gap-2">
-            <div class="text-center text-muted small py-3">Cargando usuarios...</div>
-          </div>
-        </div>
-        
-      </main>
-
-      <nav class="nav-tab-bar py-2" id="barra-navegacion" style="display: none;">
-        <div class="d-flex justify-content-around text-center small">
-          <div onclick="cambiarPestaña('inicio')" style="cursor:pointer;" class="px-2">🏠<br>Inicio</div>
-          <div id="tab-jugar" onclick="cambiarPestaña('jugar')" style="cursor:pointer; display:none;" class="px-2">🎲<br>Jugar</div>
-          <div id="tab-admin_usuarios" onclick="cambiarPestaña('admin_usuarios')" style="cursor:pointer; display:none;" class="px-2">👥<br>Usuarios</div>
-          <div id="tab-admin_control" onclick="cambiarPestaña('admin_control')" style="cursor:pointer; display:none;" class="px-2">⚙️<br>Admin</div>
-        </div>
-      </nav>
-
     </div>
 
-    <script>
-      let usuarioActual = null;
-    
-      async function iniciarSesion() {
-        let inputTel = document.getElementById("login-telefono").value.trim();
-        let inputPass = document.getElementById("login-password").value;
-        let errorDiv = document.getElementById("login-error");
-    
-        if (!inputTel || !inputPass) {
-          errorDiv.style.display = "block";
-          errorDiv.className = "alert alert-danger text-center p-2";
-          errorDiv.innerText = "Por favor, escribe tu teléfono y contraseña.";
-          return;
-        }
-    
-        errorDiv.style.display = "block";
-        errorDiv.className = "alert alert-info text-center p-2";
-        errorDiv.innerText = "Verificando credenciales...";
-    
-        try {
-          const respuesta = await fetch('/api/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ telefono: inputTel, password: inputPass })
-          });
-          const data = await respuesta.json();
-    
-          if (!respuesta.ok) {
-            errorDiv.className = "alert alert-danger text-center p-2";
-            errorDiv.innerText = data.error || "Error de autenticación";
-            return;
-          }
-    
-          usuarioActual = data.usuario;
-          // Ocultar login
-          document.getElementById("vista-login").style.display = "none";
-          document.getElementById("barra-navegacion").style.display = "block";
-          document.getElementById("user-name").innerText = usuarioActual.nombre;
-          
-          // Activar pestañas según vistas devueltas
-          const vistas = data.vistas;
-          vistas.forEach(vista => {
-            let tab = document.getElementById("tab-" + vista);
-            if (tab) tab.style.display = "block";
-          });
-    
-          cambiarPestaña("inicio");
-        } catch (err) {
-          errorDiv.className = "alert alert-danger text-center p-2";
-          errorDiv.innerText = "Error de conexión con el servidor.";
-          console.error(err);
-        }
-      }
-    
-      function cambiarPestaña(idVista) {
-        document.querySelectorAll('.vista-seccion').forEach(seccion => {
-          seccion.classList.remove('activa');
-        });
-        let vista = document.getElementById("vista-" + idVista);
-        if (vista) vista.classList.add('activa');
-      }
-    
-      async function enviarJugada() {
-        let num = document.getElementById("num-bolita").value;
-        let monto = document.getElementById("monto-bolita").value;
-    
-        if (!num || !monto) { 
-          alert("Completa el número y el monto antes de enviar."); 
-          return; 
-        }
-    
-        try {
-          const resp = await fetch('/api/jugada', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ numero: num, monto: monto })
-          });
-          const resultado = await resp.json();
-    
-          if (resultado.exito) {
-            alert("Jugada anotada. ID: " + resultado.id);
-            document.getElementById("num-bolita").value = "";
-            document.getElementById("monto-bolita").value = "";
-          } else {
-            alert("Error: " + (resultado.mensaje || "No se pudo registrar"));
-          }
-        } catch (err) {
-          alert("Error de red: " + err.message);
-        }
-      }
-    
-      async function cargarListaUsuarios() {
-        const contenedor = document.getElementById("contenedor-usuarios");
-        contenedor.innerHTML = '<div class="text-center text-muted small py-3">Cargando...</div>';
-    
-        try {
-          const resp = await fetch('/api/usuarios');
-          if (!resp.ok) {
-            contenedor.innerHTML = '<div class="alert alert-danger">No autorizado o error del servidor</div>';
-            return;
-          }
-          const usuarios = await resp.json();
-    
-          if (usuarios.length === 0) {
-            contenedor.innerHTML = '<div class="text-muted text-center">No hay usuarios registrados</div>';
-            return;
-          }
-    
-          let html = '';
-          usuarios.forEach(u => {
-            html += `
-              <div class="card p-2 small">
-                <div class="d-flex justify-content-between align-items-center">
-                  <div>
-                    <strong>${u.nombre}</strong><br>
-                    <span class="text-muted">📞 +53 ${u.telefono}</span><br>
-                    <span class="badge bg-secondary">${u.rol}</span>
-                  </div>
-                  <button class="btn btn-sm btn-outline-danger" onclick="alert('Demo: bloquear usuario ${u.telefono}')">🚫 Bloquear</button>
+    <div id="vista-registro" class="vista">
+        <div class="p-4">
+            <h3 class="text-center mb-4">Solicitar Registro</h3>
+            <input type="text" id="regNombre" class="form-control mb-2" placeholder="Nombre completo">
+            <input type="text" id="regTelefono" class="form-control mb-2" placeholder="Número WhatsApp (ej: 13055551234)">
+            <button id="btnSolicitarRegistro" class="btn btn-success w-100">Enviar solicitud</button>
+            <hr>
+            <p class="text-center">¿Ya tienes código? <a href="#" id="showVerificarLink">Verificar código</a></p>
+            <div id="regError" class="alert alert-danger mt-2 d-none"></div>
+        </div>
+    </div>
+
+    <div id="vista-verificar" class="vista">
+        <div class="p-4">
+            <h3 class="text-center mb-4">Verificar Código</h3>
+            <input type="text" id="verifTelefono" class="form-control mb-2" placeholder="Teléfono WhatsApp">
+            <input type="text" id="verifCodigo" class="form-control mb-2" placeholder="Código de 6 dígitos">
+            <button id="btnVerificar" class="btn btn-primary w-100">Activar cuenta</button>
+            <div id="verifError" class="alert alert-danger mt-2 d-none"></div>
+        </div>
+    </div>
+
+    <!-- Vista principal: Loterías (dashboard) -->
+    <div id="vista-loterias" class="vista">
+        <div class="p-3">
+            <h5>🎰 Loterías del día</h5>
+            <div id="loteriasContainer" class="row g-3"></div>
+        </div>
+    </div>
+
+    <!-- Vista historial -->
+    <div id="vista-historial" class="vista">
+        <div class="p-3">
+            <h5>📜 Mi Historial</h5>
+            <div id="historialContainer" class="list-group"></div>
+        </div>
+    </div>
+
+    <!-- Vista para administrar solicitudes (admin/dueño) -->
+    <div id="vista-admin_solicitudes" class="vista">
+        <div class="p-3">
+            <h5>👥 Solicitudes pendientes</h5>
+            <div id="solicitudesContainer" class="list-group"></div>
+        </div>
+    </div>
+
+    <!-- Vista administrar usuarios (admin/dueño) -->
+    <div id="vista-admin_usuarios" class="vista">
+        <div class="p-3">
+            <h5>👤 Gestión de Usuarios</h5>
+            <input type="text" id="buscarUsuario" class="form-control mb-2" placeholder="Buscar por teléfono">
+            <div id="usuariosContainer" class="list-group"></div>
+        </div>
+    </div>
+
+    <!-- Vista ingresar resultados manuales (admin/dueño) -->
+    <div id="vista-admin_resultados" class="vista">
+        <div class="p-3">
+            <h5>🎯 Ingresar resultado manual</h5>
+            <select id="resultadoLoteria" class="form-select mb-2"></select>
+            <input type="date" id="resultadoFecha" class="form-control mb-2">
+            <input type="text" id="resultadoPick3" class="form-control mb-2" placeholder="Pick 3 (ej: 472)">
+            <input type="text" id="resultadoPick4" class="form-control mb-2" placeholder="Pick 4 (ej: 3815)">
+            <button id="btnGuardarResultado" class="btn btn-warning w-100">Guardar resultado y procesar ganadores</button>
+        </div>
+    </div>
+
+    <!-- Vista reportes diarios (admin/dueño) -->
+    <div id="vista-admin_reportes" class="vista">
+        <div class="p-3">
+            <h5>📊 Reporte diario</h5>
+            <input type="date" id="reporteFecha" class="form-control mb-2">
+            <button id="btnVerReporte" class="btn btn-info w-100">Ver reporte</button>
+            <div id="reporteContainer" class="mt-3"></div>
+        </div>
+    </div>
+
+    <!-- Vista dueño: gestión de loterías -->
+    <div id="vista-dueno_loterias" class="vista">
+        <div class="p-3">
+            <h5>⚙️ Gestionar Loterías</h5>
+            <div id="loteriasAdminContainer" class="list-group"></div>
+        </div>
+    </div>
+
+    <!-- Vista dueño: gestión de administradores -->
+    <div id="vista-dueno_admins" class="vista">
+        <div class="p-3">
+            <h5>👨‍💼 Administradores</h5>
+            <button id="btnMostrarFormAdmin" class="btn btn-sm btn-success mb-2">+ Nuevo admin</button>
+            <div id="formNuevoAdmin" style="display:none;" class="mb-3 p-2 border">
+                <input type="text" id="adminTel" placeholder="Teléfono" class="form-control mb-1">
+                <input type="text" id="adminNombre" placeholder="Nombre" class="form-control mb-1">
+                <input type="password" id="adminPass" placeholder="Contraseña" class="form-control mb-1">
+                <button id="btnCrearAdmin" class="btn btn-primary btn-sm">Crear</button>
+            </div>
+            <div id="adminsContainer" class="list-group"></div>
+        </div>
+    </div>
+
+    <!-- Modal para apostar -->
+    <div class="modal fade" id="apostarModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Nueva Apuesta</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-              </div>
+                <div class="modal-body">
+                    <input type="hidden" id="apostarLoteriaId">
+                    <p>Lotería: <strong id="apostarLoteriaNombre"></strong></p>
+                    <div class="mb-2">
+                        <label>Modalidad</label>
+                        <div id="modalidadButtons" class="d-flex flex-wrap"></div>
+                    </div>
+                    <div id="camposDinamicos"></div>
+                    <div class="mb-2">
+                        <label>Monto ($)</label>
+                        <input type="number" id="apostarMonto" class="form-control" min="1" step="1">
+                    </div>
+                    <p>Saldo actual: <strong id="saldoActual">0</strong> $</p>
+                    <p>Ganancia potencial: <strong id="gananciaPotencial">0</strong> $</p>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-primary" id="confirmarApuesta">Confirmar</button>
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Barra de navegación inferior -->
+    <nav class="nav-tab-bar py-2 d-flex justify-content-around" id="bottomNav" style="display:none;">
+        <div data-vista="loterias" class="nav-item text-center"><i class="fa-solid fa-grid-2 fs-5"></i><br>Loterías</div>
+        <div data-vista="historial" class="nav-item text-center"><i class="fa-solid fa-clock-rotate-left"></i><br>Historial</div>
+        <div data-vista="admin_solicitudes" class="nav-item text-center admin-nav" style="display:none;"><i class="fa-solid fa-user-plus"></i><br>Solicitudes</div>
+        <div data-vista="admin_usuarios" class="nav-item text-center admin-nav" style="display:none;"><i class="fa-solid fa-users"></i><br>Usuarios</div>
+        <div data-vista="admin_resultados" class="nav-item text-center admin-nav" style="display:none;"><i class="fa-solid fa-trophy"></i><br>Resultados</div>
+        <div data-vista="admin_reportes" class="nav-item text-center admin-nav" style="display:none;"><i class="fa-solid fa-chart-simple"></i><br>Reportes</div>
+        <div data-vista="dueno_loterias" class="nav-item text-center dueno-nav" style="display:none;"><i class="fa-solid fa-gear"></i><br>Loterías</div>
+        <div data-vista="dueno_admins" class="nav-item text-center dueno-nav" style="display:none;"><i class="fa-solid fa-user-tie"></i><br>Admins</div>
+    </nav>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    let userData = null;
+    let modalidadSeleccionada = null;
+    let tipoParle1 = null, tipoParle2 = null;
+    let loteriasData = [];
+    let cuotasData = [];
+
+    function mostrarVista(id) {
+        document.querySelectorAll('.vista').forEach(v => v.classList.remove('activa'));
+        document.getElementById('vista-' + id).classList.add('activa');
+    }
+
+    async function fetchAPI(url, method, body) {
+        const opts = { method, headers: { 'Content-Type': 'application/json' }, credentials: 'include' };
+        if (body) opts.body = JSON.stringify(body);
+        const res = await fetch(url, opts);
+        if (!res.ok) throw new Error(await res.text());
+        return res.json();
+    }
+
+    async function actualizarNotificaciones() {
+        if (!userData || (userData.rol !== 'admin' && userData.rol !== 'dueño')) return;
+        try {
+            const notis = await fetchAPI('/api/notificaciones', 'GET');
+            document.getElementById('notificacionesCount').innerText = notis.length;
+            document.getElementById('notificacionesIcono').style.display = 'block';
+        } catch(e) { console.error(e); }
+    }
+
+    async function cargarLoterias() {
+        const container = document.getElementById('loteriasContainer');
+        if (!container) return;
+        try {
+            const loterias = await fetchAPI('/api/loterias', 'GET');
+            loteriasData = loterias;
+            container.innerHTML = '';
+            loterias.forEach(lot => {
+                let estadoClase = 'abierta';
+                if (lot.estado === 'abierta') estadoClase = 'abierta';
+                else if (lot.estado === 'cerrada') estadoClase = 'cerrada';
+                else if (lot.estado === 'proximamente') estadoClase = 'proximamente';
+                else estadoClase = '';
+                const card = document.createElement('div');
+                card.className = 'col-12';
+                card.innerHTML = `
+                    <div class="card card-loteria ${lot.estado}">
+                        <div class="card-body">
+                            <h6>${lot.nombre}</h6>
+                            <small>Cierre: ${lot.hora_cierre}</small>
+                            <span class="badge bg-secondary ms-2">${lot.estado}</span>
+                            ${lot.resultado_hoy ? `<div>Resultado: ${lot.resultado_hoy}</div>` : ''}
+                            ${userData && (userData.rol === 'admin' || userData.rol === 'dueño') ? `<div>Total apostado: $${lot.total_apostado || 0}</div>` : ''}
+                            ${lot.estado === 'abierta' ? `<button class="btn btn-sm btn-success mt-2" data-id="${lot.id}" data-nombre="${lot.nombre}">Apostar</button>` : ''}
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+            document.querySelectorAll('.card-loteria .btn-success').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const id = btn.getAttribute('data-id');
+                    const nombre = btn.getAttribute('data-nombre');
+                    abrirModalApuesta(id, nombre);
+                });
+            });
+        } catch(e) { console.error(e); }
+    }
+
+    async function abrirModalApuesta(loteriaId, loteriaNombre) {
+        if (!userData) return;
+        document.getElementById('apostarLoteriaId').value = loteriaId;
+        document.getElementById('apostarLoteriaNombre').innerText = loteriaNombre;
+        // Cargar cuotas
+        try {
+            if (userData.rol === 'dueño') {
+                const cuotas = await fetchAPI('/api/cuotas', 'GET');
+                cuotasData = cuotas;
+            } else {
+                cuotasData = [
+                    {modalidad:'centena',multiplicador:150},{modalidad:'fijo',multiplicador:70},
+                    {modalidad:'corrido_p3',multiplicador:35},{modalidad:'corrido_p4_ab',multiplicador:35},
+                    {modalidad:'corrido_p4_cd',multiplicador:35},{modalidad:'parle_ff',multiplicador:400},
+                    {modalidad:'parle_fc',multiplicador:150},{modalidad:'parle_cc',multiplicador:80}
+                ];
+            }
+        } catch(e) {}
+        // Mostrar botones de modalidad
+        const modalidades = ['centena','fijo','corrido_p3','corrido_p4_ab','corrido_p4_cd','parle'];
+        const divMods = document.getElementById('modalidadButtons');
+        divMods.innerHTML = '';
+        modalidades.forEach(mod => {
+            const btn = document.createElement('button');
+            btn.innerText = mod.toUpperCase();
+            btn.className = 'btn btn-outline-primary btn-sm modalidad-btn';
+            btn.onclick = () => seleccionarModalidad(mod);
+            divMods.appendChild(btn);
+        });
+        modalidadSeleccionada = null;
+        document.getElementById('camposDinamicos').innerHTML = '';
+        document.getElementById('apostarMonto').value = '';
+        document.getElementById('gananciaPotencial').innerText = '0';
+        const saldo = await fetchAPI('/api/saldo', 'GET');
+        document.getElementById('saldoActual').innerText = saldo.saldo;
+        new bootstrap.Modal(document.getElementById('apostarModal')).show();
+    }
+
+    function seleccionarModalidad(mod) {
+        modalidadSeleccionada = mod;
+        document.querySelectorAll('.modalidad-btn').forEach(btn => btn.classList.remove('active-modalidad'));
+        event.target.classList.add('active-modalidad');
+        const div = document.getElementById('camposDinamicos');
+        if (mod === 'parle') {
+            div.innerHTML = `
+                <label>Número 1 (2 dígitos)</label>
+                <input type="text" id="num1" class="form-control mb-2" maxlength="2">
+                <select id="tipo1" class="form-select mb-2"><option value="fijo">Fijo</option><option value="corrido">Corrido</option></select>
+                <label>Número 2 (2 dígitos)</label>
+                <input type="text" id="num2" class="form-control mb-2" maxlength="2">
+                <select id="tipo2" class="form-select mb-2"><option value="fijo">Fijo</option><option value="corrido">Corrido</option></select>
             `;
-          });
-          contenedor.innerHTML = html;
-        } catch (err) {
-          contenedor.innerHTML = '<div class="alert alert-danger">Error cargando usuarios</div>';
-          console.error(err);
+        } else {
+            let placeholder = mod.includes('centena') ? '3 dígitos' : '2 dígitos';
+            div.innerHTML = `<input type="text" id="numeroPrincipal" class="form-control" placeholder="${placeholder}">`;
         }
-      }
-    </script>
-  </body>
+        actualizarGananciaPotencial();
+    }
+
+    function actualizarGananciaPotencial() {
+        const monto = parseFloat(document.getElementById('apostarMonto').value) || 0;
+        if (!modalidadSeleccionada) return;
+        let cuota = 1;
+        if (modalidadSeleccionada === 'parle') {
+            const tipo1 = document.getElementById('tipo1')?.value;
+            const tipo2 = document.getElementById('tipo2')?.value;
+            if (tipo1 && tipo2) {
+                const clave = `parle_${tipo1[0]}${tipo2[0]}`;
+                const cuo = cuotasData.find(c => c.modalidad === clave);
+                if (cuo) cuota = cuo.multiplicador;
+            }
+        } else {
+            const cuo = cuotasData.find(c => c.modalidad === modalidadSeleccionada);
+            if (cuo) cuota = cuo.multiplicador;
+        }
+        const potencial = monto * cuota;
+        document.getElementById('gananciaPotencial').innerText = potencial.toFixed(2);
+    }
+
+    document.getElementById('apostarMonto')?.addEventListener('input', actualizarGananciaPotencial);
+    document.getElementById('confirmarApuesta')?.addEventListener('click', async () => {
+        const loteriaId = document.getElementById('apostarLoteriaId').value;
+        const monto = parseFloat(document.getElementById('apostarMonto').value);
+        if (!modalidadSeleccionada || !monto || monto <= 0) { alert('Complete los datos'); return; }
+        let body = { loteria_id: loteriaId, modalidad: modalidadSeleccionada, monto };
+        if (modalidadSeleccionada === 'parle') {
+            body.numero_principal = document.getElementById('num1').value;
+            body.numero_parle = document.getElementById('num2').value;
+            body.tipo_parle_1 = document.getElementById('tipo1').value;
+            body.tipo_parle_2 = document.getElementById('tipo2').value;
+        } else {
+            body.numero_principal = document.getElementById('numeroPrincipal').value;
+        }
+        try {
+            const resp = await fetchAPI('/api/apostar', 'POST', body);
+            alert('Apuesta registrada. ID: ' + resp.id);
+            bootstrap.Modal.getInstance(document.getElementById('apostarModal')).hide();
+            cargarLoterias();
+            actualizarNotificaciones();
+        } catch(e) { alert('Error: ' + e.message); }
+    });
+
+    // Funciones de login, registro, etc.
+    document.getElementById('btnLogin').onclick = async () => {
+        const telefono = document.getElementById('loginTel').value;
+        const password = document.getElementById('loginPass').value;
+        try {
+            const data = await fetchAPI('/api/login', 'POST', { telefono, password });
+            userData = data.usuario;
+            document.getElementById('userName').innerText = userData.nombre;
+            document.getElementById('logoutBtn').style.display = 'block';
+            document.getElementById('vista-login').classList.remove('activa');
+            document.getElementById('bottomNav').style.display = 'flex';
+            // Mostrar pestañas según vistas recibidas
+            const vistas = data.vistas;
+            document.querySelectorAll('.nav-item').forEach(el => el.style.display = 'none');
+            vistas.forEach(v => {
+                const navEl = document.querySelector(`.nav-item[data-vista="${v}"]`);
+                if (navEl) navEl.style.display = 'block';
+            });
+            mostrarVista('loterias');
+            cargarLoterias();
+            actualizarNotificaciones();
+        } catch(e) {
+            document.getElementById('loginError').classList.remove('d-none');
+            document.getElementById('loginError').innerText = e.message;
+        }
+    };
+    document.getElementById('logoutBtn').onclick = async () => {
+        await fetchAPI('/api/logout', 'POST');
+        location.reload();
+    };
+    document.getElementById('showRegistroLink').onclick = () => { mostrarVista('registro'); };
+    document.getElementById('showVerificarLink').onclick = () => { mostrarVista('verificar'); };
+    document.getElementById('btnSolicitarRegistro').onclick = async () => {
+        const nombre = document.getElementById('regNombre').value;
+        const telefono = document.getElementById('regTelefono').value;
+        try {
+            await fetchAPI('/api/solicitud-registro', 'POST', { nombre, telefono_whatsapp: telefono });
+            alert('Solicitud enviada. Espera aprobación.');
+            mostrarVista('login');
+        } catch(e) { alert(e.message); }
+    };
+    document.getElementById('btnVerificar').onclick = async () => {
+        const telefono = document.getElementById('verifTelefono').value;
+        const codigo = document.getElementById('verifCodigo').value;
+        try {
+            const data = await fetchAPI('/api/verificar-codigo', 'POST', { telefono_whatsapp: telefono, codigo });
+            userData = data.usuario;
+            alert('Cuenta activada. Ya puedes iniciar sesión.');
+            mostrarVista('login');
+        } catch(e) { alert(e.message); }
+    };
+    // Navegación inferior
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.addEventListener('click', () => {
+            const vista = item.getAttribute('data-vista');
+            if (vista === 'loterias') cargarLoterias();
+            if (vista === 'historial') cargarHistorial();
+            if (vista === 'admin_solicitudes') cargarSolicitudes();
+            if (vista === 'admin_usuarios') cargarUsuarios();
+            if (vista === 'admin_resultados') cargarLoteriasSelect();
+            if (vista === 'admin_reportes') { document.getElementById('reporteFecha').valueAsDate = new Date(); verReporte(); }
+            if (vista === 'dueno_loterias') cargarLoteriasAdmin();
+            if (vista === 'dueno_admins') cargarAdmins();
+            mostrarVista(vista);
+        });
+    });
+    async function cargarHistorial() {
+        const container = document.getElementById('historialContainer');
+        try {
+            const data = await fetchAPI('/api/historial', 'GET');
+            container.innerHTML = data.map(j => `<div class="list-group-item"><strong>${j.loteria}</strong> ${j.modalidad} - Núm: ${j.numero} - $${j.monto} - ${j.estado} ${j.ganancia ? `(+$${j.ganancia})` : ''}</div>`).join('');
+        } catch(e) { container.innerHTML = 'Error'; }
+    }
+    async function cargarSolicitudes() {
+        const container = document.getElementById('solicitudesContainer');
+        try {
+            const sols = await fetchAPI('/api/solicitudes-registro', 'GET');
+            container.innerHTML = sols.map(s => `<div class="list-group-item">${s.nombre} (${s.telefono_whatsapp})
+                <button class="btn btn-sm btn-success aprobar" data-id="${s.id}">Aprobar</button>
+                <button class="btn btn-sm btn-danger rechazar" data-id="${s.id}">Rechazar</button>
+            </div>`).join('');
+            document.querySelectorAll('.aprobar').forEach(btn => btn.onclick = async () => {
+                const id = btn.getAttribute('data-id');
+                const resp = await fetchAPI(`/api/solicitudes-registro/${id}/aprobar`, 'POST');
+                if (resp.url_whatsapp) {
+                    window.open(resp.url_whatsapp, '_blank');
+                    alert('Código generado. Envía el mensaje por WhatsApp al jugador.');
+                }
+                cargarSolicitudes();
+            });
+            document.querySelectorAll('.rechazar').forEach(btn => btn.onclick = async () => {
+                const id = btn.getAttribute('data-id');
+                await fetchAPI(`/api/solicitudes-registro/${id}/rechazar`, 'POST');
+                cargarSolicitudes();
+            });
+        } catch(e) { container.innerHTML = 'Error'; }
+    }
+    async function cargarUsuarios() {
+        const container = document.getElementById('usuariosContainer');
+        try {
+            const users = await fetchAPI('/api/usuarios', 'GET');
+            container.innerHTML = users.map(u => `<div class="list-group-item">${u.nombre} (${u.telefono}) - Saldo: $${u.saldo} - ${u.activo ? 'Activo' : 'Bloqueado'}
+                <button class="btn btn-sm btn-warning recargar" data-tel="${u.telefono}">Recargar</button>
+                ${u.activo ? `<button class="btn btn-sm btn-danger bloquear" data-tel="${u.telefono}">Bloquear</button>` : `<button class="btn btn-sm btn-success desbloquear" data-tel="${u.telefono}">Desbloquear</button>`}
+            </div>`).join('');
+            document.querySelectorAll('.recargar').forEach(btn => btn.onclick = async () => {
+                let monto = prompt('Monto a recargar:');
+                if (monto) await fetchAPI('/api/recargar', 'POST', { telefono: btn.getAttribute('data-tel'), monto: parseFloat(monto), metodo_pago: 'efectivo' });
+                cargarUsuarios();
+            });
+            // similares para bloquear/desbloquear...
+        } catch(e) { container.innerHTML = 'Error'; }
+    }
+    async function cargarLoteriasSelect() {
+        const select = document.getElementById('resultadoLoteria');
+        const lotes = await fetchAPI('/api/loterias/admin', 'GET');
+        select.innerHTML = lotes.map(l => `<option value="${l.id}">${l.nombre}</option>`).join('');
+    }
+    document.getElementById('btnGuardarResultado').onclick = async () => {
+        const loteria_id = document.getElementById('resultadoLoteria').value;
+        const fecha = document.getElementById('resultadoFecha').value;
+        const pick3 = document.getElementById('resultadoPick3').value;
+        const pick4 = document.getElementById('resultadoPick4').value;
+        await fetchAPI('/api/resultado/manual', 'POST', { loteria_id, fecha, numero_ganador_pick3: pick3, numero_ganador_pick4: pick4 });
+        alert('Resultado guardado y ganadores procesados.');
+    };
+    async function verReporte() {
+        const fecha = document.getElementById('reporteFecha').value;
+        const data = await fetchAPI(`/api/reportes/diario?fecha=${fecha}`, 'GET');
+        document.getElementById('reporteContainer').innerHTML = data.map(r => `<div>${r.loteria}: Apostado $${r.total_apostado} - Pagado $${r.total_pagado} - Ganancia $${r.ganancia}</div>`).join('');
+    }
+    document.getElementById('btnVerReporte').onclick = verReporte;
+    async function cargarLoteriasAdmin() {
+        const container = document.getElementById('loteriasAdminContainer');
+        const lotes = await fetchAPI('/api/loterias/admin', 'GET');
+        container.innerHTML = lotes.map(l => `<div class="list-group-item">${l.nombre} <br> Apertura: ${l.hora_apertura} Cierre: ${l.hora_cierre} Resultado: ${l.hora_resultado}
+            <button class="btn btn-sm btn-primary editarLot" data-id="${l.id}">Editar</button>
+        </div>`).join('');
+    }
+    document.getElementById('btnMostrarFormAdmin').onclick = () => document.getElementById('formNuevoAdmin').style.display = 'block';
+    document.getElementById('btnCrearAdmin').onclick = async () => {
+        const tel = document.getElementById('adminTel').value;
+        const nombre = document.getElementById('adminNombre').value;
+        const pass = document.getElementById('adminPass').value;
+        await fetchAPI('/api/administradores', 'POST', { telefono: tel, nombre, password: pass });
+        alert('Admin creado');
+        cargarAdmins();
+    };
+    async function cargarAdmins() {
+        const container = document.getElementById('adminsContainer');
+        const users = await fetchAPI('/api/usuarios', 'GET');
+        const admins = users.filter(u => u.rol === 'admin');
+        container.innerHTML = admins.map(a => `<div class="list-group-item">${a.nombre} (${a.telefono}) <button class="btn btn-sm btn-danger eliminarAdmin" data-tel="${a.telefono}">Eliminar</button></div>`).join('');
+        document.querySelectorAll('.eliminarAdmin').forEach(btn => btn.onclick = async () => {
+            await fetchAPI(`/api/administradores/${btn.getAttribute('data-tel')}`, 'DELETE');
+            cargarAdmins();
+        });
+    }
+    setInterval(actualizarNotificaciones, 30000);
+    window.onload = () => { mostrarVista('login'); };
+</script>
+</body>
 </html>
