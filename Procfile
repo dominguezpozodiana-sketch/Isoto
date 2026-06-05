@@ -1,1 +1,1 @@
-web: gunicorn app:app --preload --workers=2 --threads=2
+web: gunicorn app:app --preload --workers=2 --threads=2 --bind=0.0.0.0:${PORT:-8000}
