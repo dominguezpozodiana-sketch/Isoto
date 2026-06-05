@@ -1,38 +1,68 @@
 from flask import Flask, request, jsonify, session, send_from_directory
 from flask_cors import CORS
-import os
+import sqlite3
 import uuid
+import os
 from datetime import datetime
 
 app = Flask(__name__, static_folder='.')
 app.secret_key = 'cambia-esta-clave-por-una-segura'
-CORS(app)  # Permitir peticiones desde el mismo origen
+CORS(app)
 
-# -------------------- DATOS EN MEMORIA (demo) --------------------
-# En un caso real usarías una base de datos (SQLite, PostgreSQL, etc.)
+# -------------------- INICIALIZAR BASE DE DATOS --------------------
+DB_NAME = 'bolita.db'
 
-usuarios = {
-    "52345678": {
-        "telefono": "52345678",
-        "password": "1234",
-        "nombre": "Juan Pérez",
-        "rol": "usuario"   # puede ser "usuario" o "admin"
-    },
-    "51234567": {
-        "telefono": "51234567",
-        "password": "admin",
-        "nombre": "Administrador",
-        "rol": "admin"
-    }
-}
+def init_db():
+    """Crea las tablas si no existen y carga usuarios por defecto"""
+    conn = sqlite3.connect(DB_NAME)
+    c = conn.cursor()
+    
+    # Tabla de usuarios
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS usuarios (
+            telefono TEXT PRIMARY KEY,
+            password TEXT NOT NULL,
+            nombre TEXT NOT NULL,
+            rol TEXT NOT NULL
+        )
+    ''')
+    
+    # Tabla de jugadas
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS jugadas (
+            id TEXT PRIMARY KEY,
+            telefono TEXT NOT NULL,
+            numero INTEGER NOT NULL,
+            monto REAL NOT NULL,
+            fecha TEXT NOT NULL,
+            estado TEXT NOT NULL,
+            FOREIGN KEY (telefono) REFERENCES usuarios(telefono)
+        )
+    ''')
+    
+    # Insertar usuarios de ejemplo si la tabla está vacía
+    c.execute("SELECT COUNT(*) FROM usuarios")
+    if c.fetchone()[0] == 0:
+        usuarios_ejemplo = [
+            ('52345678', '1234', 'Juan Pérez', 'usuario'),
+            ('51234567', 'admin', 'Administrador', 'admin')
+        ]
+        c.executemany("INSERT INTO usuarios (telefono, password, nombre, rol) VALUES (?, ?, ?, ?)", usuarios_ejemplo)
+    
+    conn.commit()
+    conn.close()
 
-jugadas = []  # lista de diccionarios
+# Llamar a la función al arrancar el servidor
+init_db()
+
+# -------------------- FUNCIONES AUXILIARES --------------------
+def get_db():
+    """Devuelve una conexión a la base de datos"""
+    return sqlite3.connect(DB_NAME)
 
 # -------------------- RUTAS DE LA API --------------------
-
 @app.route('/')
 def index():
-    """Sirve el archivo HTML principal"""
     return send_from_directory('.', 'index.html')
 
 @app.route('/api/login', methods=['POST'])
@@ -41,27 +71,36 @@ def api_login():
     telefono = str(data.get('telefono', '')).strip()
     password = data.get('password', '')
 
-    user = usuarios.get(telefono)
-    if not user or user['password'] != password:
+    conn = get_db()
+    c = conn.cursor()
+    c.execute("SELECT telefono, nombre, rol FROM usuarios WHERE telefono = ? AND password = ?", (telefono, password))
+    user = c.fetchone()
+    conn.close()
+
+    if not user:
         return jsonify({"error": "Teléfono o contraseña incorrectos"}), 401
 
-    # Guardar sesión (opcional)
-    session['user'] = user
+    # Guardar sesión
+    session['user'] = {
+        'telefono': user[0],
+        'nombre': user[1],
+        'rol': user[2]
+    }
 
-    # Determinar qué vistas (pestañas) puede ver
+    # Determinar vistas según rol
     vistas = ['inicio']
-    if user['rol'] == 'usuario':
+    if user[2] == 'usuario':
         vistas.append('jugar')
-    elif user['rol'] == 'admin':
+    elif user[2] == 'admin':
         vistas.append('jugar')
         vistas.append('admin_usuarios')
         vistas.append('admin_control')
 
     return jsonify({
         "usuario": {
-            "telefono": user['telefono'],
-            "nombre": user['nombre'],
-            "rol": user['rol']
+            "telefono": user[0],
+            "nombre": user[1],
+            "rol": user[2]
         },
         "vistas": vistas
     })
@@ -76,7 +115,7 @@ def api_jugada():
     monto = data.get('monto')
     telefono = session['user']['telefono']
 
-    # Validaciones simples
+    # Validaciones
     if not numero or not monto:
         return jsonify({"exito": False, "mensaje": "Faltan datos"}), 400
     try:
@@ -87,34 +126,36 @@ def api_jugada():
     except:
         return jsonify({"exito": False, "mensaje": "Número (00-99) y monto positivo requeridos"}), 400
 
-    nueva_jugada = {
-        "id": str(uuid.uuid4())[:8],
-        "telefono": telefono,
-        "numero": numero,
-        "monto": monto,
-        "fecha": datetime.now().isoformat(),
-        "estado": "pendiente"
-    }
-    jugadas.append(nueva_jugada)
+    jugada_id = str(uuid.uuid4())[:8]
+    fecha = datetime.now().isoformat()
+    estado = 'pendiente'
 
-    return jsonify({"exito": True, "id": nueva_jugada['id']})
+    conn = get_db()
+    c = conn.cursor()
+    try:
+        c.execute("INSERT INTO jugadas (id, telefono, numero, monto, fecha, estado) VALUES (?, ?, ?, ?, ?, ?)",
+                  (jugada_id, telefono, numero, monto, fecha, estado))
+        conn.commit()
+        conn.close()
+        return jsonify({"exito": True, "id": jugada_id})
+    except Exception as e:
+        conn.close()
+        return jsonify({"exito": False, "mensaje": f"Error en BD: {str(e)}"}), 500
 
 @app.route('/api/usuarios', methods=['GET'])
 def api_usuarios():
     if 'user' not in session or session['user']['rol'] != 'admin':
         return jsonify({"error": "No autorizado"}), 403
 
-    # Devolver lista de usuarios (sin las contraseñas)
-    lista = []
-    for tel, datos in usuarios.items():
-        lista.append({
-            "telefono": tel,
-            "nombre": datos['nombre'],
-            "rol": datos['rol']
-        })
+    conn = get_db()
+    c = conn.cursor()
+    c.execute("SELECT telefono, nombre, rol FROM usuarios")
+    rows = c.fetchall()
+    conn.close()
+
+    lista = [{"telefono": r[0], "nombre": r[1], "rol": r[2]} for r in rows]
     return jsonify(lista)
 
-# -------------------- INICIAR EL SERVIDOR --------------------
+# -------------------- INICIAR SERVIDOR --------------------
 if __name__ == '__main__':
-    # Escucha en todas las interfaces para que Codespaces pueda redirigir
     app.run(host='0.0.0.0', port=8000, debug=True)
