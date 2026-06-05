@@ -1,0 +1,3 @@
+# Archivo de configuración global de empaquetado para el servidor
+[settings]
+python.github_attestations = false
