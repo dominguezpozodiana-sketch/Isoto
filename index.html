@@ -1,0 +1,243 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+      body { background-color: #f0f2f5; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+      .app-container { max-width: 450px; margin: 0 auto; background: white; min-height: 100vh; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+      .nav-tab-bar { background: #111111; color: white; border-top: 1px solid #222; }
+      .vista-seccion { display: none; padding: 20px; }
+      .vista-seccion.activa { display: block; }
+      .input-group-text { background-color: #e9ecef; font-weight: bold; }
+    </style>
+  </head>
+  <body>
+
+    <div class="app-container d-flex flex-column justify-content-between">
+      
+      <header class="bg-dark text-white text-center py-3 position-relative">
+        <h5 class="mb-0">🇨🇺 La Bolita Cubana 🎲</h5>
+      </header>
+
+      <main class="flex-grow-1">
+        
+        <!-- PANTALLA DE INICIO DE SESIÓN -->
+        <div id="vista-login" class="p-4">
+          <div class="text-center my-4">
+            <h3 class="fw-bold text-primary">Iniciar Sesión</h3>
+            <p class="text-muted small">Ingresa tus datos de acceso</p>
+          </div>
+          
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Número Móvil</label>
+            <div class="input-group">
+              <span class="input-group-text">+53</span>
+              <input type="text" id="login-telefono" class="form-control form-control-lg" placeholder="5XXXXXXX" inputmode="numeric">
+            </div>
+            <div class="form-text text-muted">Ejemplo: 52345678 (8 dígitos)</div>
+          </div>
+
+          <div class="mb-4">
+            <label class="form-label fw-semibold">Contraseña</label>
+            <input type="password" id="login-password" class="form-control form-control-lg" placeholder="••••••••">
+          </div>
+
+          <button class="btn btn-primary btn-lg w-100 mb-3" onclick="iniciarSesion()">Entrar al Sistema</button>
+          
+          <div id="login-error" class="alert alert-danger text-center p-2" style="display: none;"></div>
+        </div>
+
+        <div id="vista-inicio" class="vista-seccion">
+          <h4>¡Hola, <span id="user-name" class="text-primary fw-bold"></span>!</h4>
+          <p class="text-muted">Bienvenido al sistema oficial de gestión de jugadas.</p>
+          <hr>
+          <div class="card p-3 bg-light">
+            <h6>📢 Avisos del Administrador</h6>
+            <p class="small text-secondary mb-0">Las listas cierran 15 minutos antes del tiro. Asegúrate de reportar tus pagos a tiempo.</p>
+          </div>
+        </div>
+
+        <div id="vista-jugar" class="vista-seccion">
+          <h4 class="fw-bold mb-3">🎲 Registrar Nueva Jugada</h4>
+          <div class="card p-3 shadow-sm mb-3">
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Número a Jugar (00 - 99)</label>
+              <input type="number" id="num-bolita" class="form-control form-control-lg text-center fw-bold text-success" style="font-size: 24px;" min="0" max="99" placeholder="00">
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Monto de Apuesta ($)</label>
+              <input type="number" id="monto-bolita" class="form-control form-control-lg text-center" min="1" placeholder="Monto en CUP/USD">
+            </div>
+            <button class="btn btn-success btn-lg w-100" onclick="enviarJugada()">Enviar Ficha</button>
+          </div>
+        </div>
+
+        <div id="vista-admin_control" class="vista-seccion">
+          <h4 class="text-danger fw-bold mb-3">⚡ Panel de Control (Creador)</h4>
+          <div class="d-grid gap-2">
+            <button class="btn btn-danger btn-lg" onclick="alert('Bloqueando recepción... (demo)')">🔒 Bloquear Tiros (Cierre)</button>
+            <button class="btn btn-dark btn-lg" onclick="alert('Abriendo recepción... (demo)')">🔓 Abrir Tiros (Nuevo Día)</button>
+            <button class="btn btn-warning btn-lg" onclick="alert('Ingresar números ganadores... (demo)')">🏆 Digitar Números Ganadores</button>
+          </div>
+        </div>
+        
+        <div id="vista-admin_usuarios" class="vista-seccion">
+          <h4 class="fw-bold text-dark mb-3">👥 Control de Usuarios</h4>
+          <p class="text-muted small">Aprueba registros pendientes o bloquea usuarios.</p>
+          
+          <button class="btn btn-outline-primary btn-sm w-100 mb-3" onclick="cargarListaUsuarios()">🔄 Actualizar Lista</button>
+          
+          <div id="contenedor-usuarios" class="d-flex flex-column gap-2">
+            <div class="text-center text-muted small py-3">Cargando usuarios...</div>
+          </div>
+        </div>
+        
+      </main>
+
+      <nav class="nav-tab-bar py-2" id="barra-navegacion" style="display: none;">
+        <div class="d-flex justify-content-around text-center small">
+          <div onclick="cambiarPestaña('inicio')" style="cursor:pointer;" class="px-2">🏠<br>Inicio</div>
+          <div id="tab-jugar" onclick="cambiarPestaña('jugar')" style="cursor:pointer; display:none;" class="px-2">🎲<br>Jugar</div>
+          <div id="tab-admin_usuarios" onclick="cambiarPestaña('admin_usuarios')" style="cursor:pointer; display:none;" class="px-2">👥<br>Usuarios</div>
+          <div id="tab-admin_control" onclick="cambiarPestaña('admin_control')" style="cursor:pointer; display:none;" class="px-2">⚙️<br>Admin</div>
+        </div>
+      </nav>
+
+    </div>
+
+    <script>
+      let usuarioActual = null;
+    
+      async function iniciarSesion() {
+        let inputTel = document.getElementById("login-telefono").value.trim();
+        let inputPass = document.getElementById("login-password").value;
+        let errorDiv = document.getElementById("login-error");
+    
+        if (!inputTel || !inputPass) {
+          errorDiv.style.display = "block";
+          errorDiv.className = "alert alert-danger text-center p-2";
+          errorDiv.innerText = "Por favor, escribe tu teléfono y contraseña.";
+          return;
+        }
+    
+        errorDiv.style.display = "block";
+        errorDiv.className = "alert alert-info text-center p-2";
+        errorDiv.innerText = "Verificando credenciales...";
+    
+        try {
+          const respuesta = await fetch('/api/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ telefono: inputTel, password: inputPass })
+          });
+          const data = await respuesta.json();
+    
+          if (!respuesta.ok) {
+            errorDiv.className = "alert alert-danger text-center p-2";
+            errorDiv.innerText = data.error || "Error de autenticación";
+            return;
+          }
+    
+          usuarioActual = data.usuario;
+          // Ocultar login
+          document.getElementById("vista-login").style.display = "none";
+          document.getElementById("barra-navegacion").style.display = "block";
+          document.getElementById("user-name").innerText = usuarioActual.nombre;
+          
+          // Activar pestañas según vistas devueltas
+          const vistas = data.vistas;
+          vistas.forEach(vista => {
+            let tab = document.getElementById("tab-" + vista);
+            if (tab) tab.style.display = "block";
+          });
+    
+          cambiarPestaña("inicio");
+        } catch (err) {
+          errorDiv.className = "alert alert-danger text-center p-2";
+          errorDiv.innerText = "Error de conexión con el servidor.";
+          console.error(err);
+        }
+      }
+    
+      function cambiarPestaña(idVista) {
+        document.querySelectorAll('.vista-seccion').forEach(seccion => {
+          seccion.classList.remove('activa');
+        });
+        let vista = document.getElementById("vista-" + idVista);
+        if (vista) vista.classList.add('activa');
+      }
+    
+      async function enviarJugada() {
+        let num = document.getElementById("num-bolita").value;
+        let monto = document.getElementById("monto-bolita").value;
+    
+        if (!num || !monto) { 
+          alert("Completa el número y el monto antes de enviar."); 
+          return; 
+        }
+    
+        try {
+          const resp = await fetch('/api/jugada', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ numero: num, monto: monto })
+          });
+          const resultado = await resp.json();
+    
+          if (resultado.exito) {
+            alert("Jugada anotada. ID: " + resultado.id);
+            document.getElementById("num-bolita").value = "";
+            document.getElementById("monto-bolita").value = "";
+          } else {
+            alert("Error: " + (resultado.mensaje || "No se pudo registrar"));
+          }
+        } catch (err) {
+          alert("Error de red: " + err.message);
+        }
+      }
+    
+      async function cargarListaUsuarios() {
+        const contenedor = document.getElementById("contenedor-usuarios");
+        contenedor.innerHTML = '<div class="text-center text-muted small py-3">Cargando...</div>';
+    
+        try {
+          const resp = await fetch('/api/usuarios');
+          if (!resp.ok) {
+            contenedor.innerHTML = '<div class="alert alert-danger">No autorizado o error del servidor</div>';
+            return;
+          }
+          const usuarios = await resp.json();
+    
+          if (usuarios.length === 0) {
+            contenedor.innerHTML = '<div class="text-muted text-center">No hay usuarios registrados</div>';
+            return;
+          }
+    
+          let html = '';
+          usuarios.forEach(u => {
+            html += `
+              <div class="card p-2 small">
+                <div class="d-flex justify-content-between align-items-center">
+                  <div>
+                    <strong>${u.nombre}</strong><br>
+                    <span class="text-muted">📞 +53 ${u.telefono}</span><br>
+                    <span class="badge bg-secondary">${u.rol}</span>
+                  </div>
+                  <button class="btn btn-sm btn-outline-danger" onclick="alert('Demo: bloquear usuario ${u.telefono}')">🚫 Bloquear</button>
+                </div>
+              </div>
+            `;
+          });
+          contenedor.innerHTML = html;
+        } catch (err) {
+          contenedor.innerHTML = '<div class="alert alert-danger">Error cargando usuarios</div>';
+          console.error(err);
+        }
+      }
+    </script>
+  </body>
+</html>
