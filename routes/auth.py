@@ -1,4 +1,5 @@
 import re
+from datetime import datetime, timedelta
 from flask import Blueprint, request, jsonify, session
 from models import db, Usuario, SolicitudRegistro
 from utils import hash_password, check_password, generar_codigo_otp, generar_url_whatsapp
@@ -6,12 +7,17 @@ from utils import hash_password, check_password, generar_codigo_otp, generar_url
 auth_bp = Blueprint('auth_bp', __name__)
 
 def validar_telefono_formato(telefono):
-    """Acepta únicamente cadenas puramente numéricas de entre 8 y 15 dígitos."""
     return bool(re.match(r"^\d{8,15}$", telefono))
 
 def validar_password_fuerza(password):
-    """Valida una longitud mínima de 6 caracteres para evitar claves triviales."""
-    return len(password) >= 6
+    """Exige un estándar alto: mínimo 8 caracteres, mínimo 1 letra y 1 número (Punto 5)."""
+    if len(password) < 8:
+        return False
+    if not re.search(r"[A-Za-z]", password):
+        return False
+    if not re.search(r"[0-9]", password):
+        return False
+    return True
 
 @auth_bp.route('/api/auth/solicitar-registro', methods=['POST'])
 def solicitar_registro():
@@ -19,7 +25,6 @@ def solicitar_registro():
     telefono = str(data.get('telefono', '')).strip()
     password = str(data.get('password', ''))
 
-    # Validaciones estructurales de sanidad
     if not telefono or not password:
         return jsonify({'error': 'Todos los campos son obligatorios.'}), 400
 
@@ -27,35 +32,34 @@ def solicitar_registro():
         return jsonify({'error': 'Número de teléfono inválido. Use solo números (8 a 15 dígitos).'}), 400
 
     if not validar_password_fuerza(password):
-        return jsonify({'error': 'La contraseña debe tener al menos 6 caracteres.'}), 400
+        return jsonify({'error': 'La contraseña debe tener mínimo 8 caracteres, incluyendo letras y números.'}), 400
 
-    # Mitigación de enumeración: Respuesta genérica unificada
-    usuario_existe = Usuario.query.get(telefono)
-    solicitud_existe = SolicitudRegistro.query.filter_by(telefono_whatsapp=telefono, estado='pendiente').first()
-    
-    if usuario_existe or solicitud_existe:
-        return jsonify({'error': 'El número ingresado no está disponible para registro actualmente.'}), 400
+    error_generico = 'El número ingresado no está disponible para registro actualmente.'
+    if Usuario.query.get(telefono) or SolicitudRegistro.query.filter_by(telefono_whatsapp=telefono, estado='pendiente').first():
+        return jsonify({'error': error_generico}), 400
 
-    # Crear la solicitud
     otp = generar_codigo_otp()
     hash_p = hash_password(password)
+    
+    # Define ventana de expiración del código a 10 minutos (Punto 4)
+    limite_temporal = datetime.utcnow() + timedelta(minutes=10)
 
     nueva_solicitud = SolicitudRegistro(
         telefono_whatsapp=telefono,
         password_hash=hash_p,
         codigo_otp=otp,
         intentos_otp=0,
+        fecha_expiracion=limite_temporal,
         estado='pendiente'
     )
 
     try:
         db.session.add(nueva_solicitud)
         db.session.commit()
-    except Exception as e:
+    except Exception:
         db.session.rollback()
-        return jsonify({'error': 'Error de procesamiento interno en el servidor.'}), 500
+        return jsonify({'error': 'Error de procesamiento interno.'}), 500
 
-    # Generación de URL de WhatsApp (Punto 1 corregido)
     mensaje = f"Hola, mi código de verificación para la plataforma de Lotería es: {otp}"
     url_wa = generar_url_whatsapp(nueva_solicitud.telefono_whatsapp, mensaje)
 
@@ -72,22 +76,26 @@ def verificar_otp():
     codigo = str(data.get('codigo', '')).strip()
 
     solicitud = SolicitudRegistro.query.filter_by(telefono_whatsapp=telefono, estado='pendiente').first()
-    
-    if not_solicitud := (not solicitud):
+    if not solicitud:
         return jsonify({'error': 'No se localizan solicitudes pendientes para este número.'}), 404
 
-    # Control estricto de ataques por fuerza bruta al OTP (Máximo 3 intentos)
+    # Validación 1: Expiración por reloj (Punto 4)
+    if datetime.utcnow() > solicitud.fecha_expiracion:
+        solicitud.estado = 'rechazado'
+        db.session.commit()
+        return jsonify({'error': 'El código OTP ha expirado debido al límite de tiempo (10 min). Genere uno nuevo.'}), 400
+
+    # Validación 2: Fuerza bruta
     if solicitud.intentos_otp >= 3:
         solicitud.estado = 'rechazado'
         db.session.commit()
-        return jsonify({'error': 'Código bloqueado por exceso de intentos erróneos. Solicite uno nuevo.'}), 400
+        return jsonify({'error': 'Código bloqueado por exceso de intentos erróneos.'}), 400
 
     if solicitud.codigo_otp != codigo:
         solicitud.intentos_otp += 1
         db.session.commit()
-        return jsonify({'error': f'Código de verificación incorrecto. Intentos restantes: {3 - solicitud.intentos_otp}'}), 400
+        return jsonify({'error': f'Código incorrecto. Intentos restantes: {3 - solicitud.intentos_otp}'}), 400
 
-    # Crear el usuario final tras la validación exitosa
     nuevo_usuario = Usuario(
         telefono=solicitud.telefono_whatsapp,
         password_hash=solicitud.password_hash,
@@ -95,7 +103,6 @@ def verificar_otp():
         saldo=0.00,
         activo=True
     )
-    
     solicitud.estado = 'aprobado'
     db.session.add(nuevo_usuario)
     
@@ -105,7 +112,7 @@ def verificar_otp():
         db.session.rollback()
         return jsonify({'error': 'Error al asentar tu cuenta de usuario.'}), 500
 
-    return jsonify({'msg': '¡Cuenta verificada y activada con éxito! Ya puedes iniciar sesión.'}), 200
+    return jsonify({'msg': '¡Cuenta verificada y activada con éxito!'}), 200
 
 
 @auth_bp.route('/api/auth/login', methods=['POST'])
@@ -114,9 +121,7 @@ def login():
     telefono = str(data.get('telefono', '')).strip()
     password = str(data.get('password', ''))
 
-    # Respuesta unificada para evitar el descubrimiento de cuentas activas
     error_generico = "Credenciales incorrectas o cuenta no autorizada."
-
     usuario = Usuario.query.get(telefono)
     if not usuario or not usuario.activo:
         return jsonify({'error': error_generico}), 401
@@ -124,7 +129,6 @@ def login():
     if not check_password(usuario.password_hash, password):
         return jsonify({'error': error_generico}), 401
 
-    # Defensa contra Session Fixation: Limpiar y recrear identificadores de sesión
     session.clear()
     session['telefono'] = usuario.telefono
     session['rol'] = usuario.rol
@@ -133,9 +137,3 @@ def login():
         'msg': 'Autenticación exitosa',
         'usuario': {'telefono': usuario.telefono, 'rol': usuario.rol, 'saldo': float(usuario.saldo)}
     }), 200
-
-
-@auth_bp.route('/api/auth/logout', methods=['POST'])
-def logout():
-    session.clear()
-    return jsonify({'msg': 'Sesión cerrada de manera segura.'}), 200
