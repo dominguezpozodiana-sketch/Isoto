@@ -1,79 +1,94 @@
-from flask import Blueprint, jsonify, request, session
-from datetime import datetime, time
-import pytz
+from flask import Blueprint, request, jsonify, session
+from datetime import datetime
 from models import db, Loteria
 from utils import requiere_rol
 
 loterias_bp = Blueprint('loterias_bp', __name__)
 
-# Almacenamiento en memoria para cierres manuales del día actual (se reinicia al pasar la medianoche)
-# Estructura: { (loteria_id, fecha_str): True }
-cierres_manuales_hoy = {}
-
-def obtener_estado_loteria(loteria, zona_horaria="US/Eastern"):
-    """Calcula el estado exacto de la lotería basado en la hora actual de la costa este."""
-    tz = pytz.timezone(zona_horaria)
-    ahora = datetime.now(tz)
-    hora_actual = ahora.time()
-    fecha_actual_str = ahora.strftime('%Y-%m-%d')
-
-    # 1. Verificar si fue forzado un cierre manual hoy
-    if cierres_manuales_hoy.get((loteria.id, fecha_actual_str)):
-        return "cerrada"
-    
-    # 2. Verificar si no está activa globalmente
-    if not loteria.activa:
-        return "proximamente"
-
-    # Conversiones de strings/times si aplica
-    h_apertura = loteria.hora_apertura
-    h_cierre = loteria.hora_cierre
-    h_resultado = loteria.hora_resultado
-
-    if hora_actual < h_apertura:
-        return "proximamente"
-    elif h_apertura <= hora_actual < h_cierre:
-        return "abierta"
-    elif h_cierre <= hora_actual < h_resultado:
-        return "cerrada"
-    else:
-        # Pasa de la hora del resultado. Si ya hay un número registrado en BD para hoy,
-        # su estado final pasará a 'procesada', de lo contrario devuelve 'resultado_pendiente'.
-        from models import Resultado
-        res = Resultado.query.filter_by(loteria_id=loteria.id, fecha=ahora.date()).first()
-        if res and res.procesado:
-            return "procesada"
-        return "resultado_pendiente"
-
 @loterias_bp.route('/api/loterias', methods=['GET'])
-def listar_loterias():
-    """Endpoint público para los jugadores. Muestra estados calculados al instante."""
-    loterias = Loteria.query.filter_by(activa=True).all()
-    resultado = []
-    
-    for lot in loterias:
-        estado_actual = obtener_estado_loteria(lot)
-        resultado.append({
-          'id': lot.id,
-          'nombre': lot.nombre,
-          'turno': lot.turno,
-          'hora_cierre': lot.hora_cierre.strftime('%I:%M %p'),
-          'estado': estado_actual
-        })
-    return jsonify({'loterias': resultado}), 200
+def obtener_loterias():
+    """Retorna el catálogo total de terminales de loterías registradas en el ecosistema."""
+    try:
+        lista = Loteria.query.all()
+        resultado = [{
+            'id': l.id,
+            'nombre': l.nombre,
+            'turno': l.turno,
+            'hora_apertura': l.hora_apertura.strftime('%H:%M:%S'),
+            'hora_cierre': l.hora_cierre.strftime('%H:%M:%S'),
+            'activa': l.activa
+        } for l in lista]
+        
+        return jsonify({'loterias': resultado}), 200
+    except Exception as e:
+        return jsonify({'error': f"Error al mapear sorteos: {str(e)}"}), 500
 
-@loterias_bp.route('/api/loterias/<int:id>/cerrar-hoy', methods=['POST'])
+
+@loterias_bp.route('/api/admin/crear-loteria', methods=['POST'])
+@requiere_rol('dueno')
+def crear_nueva_loteria_banca():
+    """Permite al Creador de la plataforma dar de alta nuevas terminales horarias."""
+    data = request.get_json() or {}
+    id_loteria = data.get('id')
+    nombre = data.get('nombre')
+    turno = data.get('turno') # 'dia', 'noche'
+    apertura_str = data.get('hora_apertura') # Formato "HH:MM"
+    cierre_str = data.get('hora_cierre')
+
+    if not id_loteria or not nombre or not turno or not apertura_str or not cierre_str:
+        return jsonify({'error': 'Todos los campos son mandatorios para el alta.'}), 400
+
+    if Loteria.query.get(id_loteria):
+        return jsonify({'error': 'El ID de la lotería provisto ya se encuentra en uso.'}), 400
+
+    try:
+        hora_apertura = datetime.strptime(apertura_str, '%H:%M').time()
+        hora_cierre = datetime.strptime(cierre_str, '%H:%M').time()
+    except ValueError:
+        return jsonify({'error': 'Formato de hora inválido. Use la estructura de 24 horas (HH:MM).'}), 400
+
+    nueva_loteria = Loteria(
+        id=id_loteria.lower().strip(),
+        nombre=nombre,
+        turno=turno.lower().strip(),
+        hora_apertura=hora_apertura,
+        hora_cierre=hora_cierre,
+        activa=True
+    )
+
+    try:
+        db.session.add(nueva_loteria)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f"Error de persistencia relacional: {str(e)}"}), 500
+
+    return jsonify({'msg': f"Sorteo '{nombre}' configurado e incorporado exitosamente."}), 201
+
+
+@loterias_bp.route('/api/admin/modificar-estado-loteria', methods=['POST'])
 @requiere_rol('admin', 'dueno')
-def cerrar_manual(id):
-    """Permite a un administrador forzar el cierre anticipado de una lotería específica por hoy."""
-    loteria = Loteria.query.get_or_404(id)
-    tz = pytz.timezone(loteria.zona_horaria or "US/Eastern")
-    fecha_hoy_str = datetime.now(tz).strftime('%Y-%m-%d')
+def conmutar_operacion_loteria():
+    """Bloquea o desbloquea sorteos de forma persistente en Base de Datos (Punto 21 corregido)."""
+    data = request.get_json() or {}
+    id_loteria = data.get('id')
+    estatus_activo = data.get('activa')
+
+    if not id_loteria or estatus_activo is None:
+        return jsonify({'error': 'Faltan parámetros de identificación de sorteo.'}), 400
+
+    loteria = Loteria.query.get(id_loteria)
+    if not loteria:
+        return jsonify({'error': 'La lotería solicitada no figura en los registros.'}), 404
+
+    # Modificación guardada de forma persistente a nivel de base de datos
+    loteria.activa = bool(estatus_activo)
     
-    cierres_manuales_hoy[(loteria.id, fecha_hoy_str)] = True
-    
-    return jsonify({
-        'msg': f'La lotería {loteria.nombre} ha sido cerrada manualmente por el resto del día.',
-        'loteria_id': id,
-        'estado': 'cerrada'
-    }), 200
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f"Fallo al asentar la modificación operativa: {str(e)}"}), 500
+
+    estado_txt = "Abierta / Activa" if loteria.activa else "Pausada / Cerrada"
+    return jsonify({'msg': f"La lotería '{loteria.nombre}' se encuentra ahora en estado: {estado_txt}."}), 200
