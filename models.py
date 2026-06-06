@@ -6,7 +6,7 @@ db = SQLAlchemy()
 
 class Usuario(db.Model):
     __tablename__ = 'usuarios'
-    
+
     telefono = db.Column(db.String(20), primary_key=True, index=True)
     password_hash = db.Column(db.String(255), nullable=False)
     rol = db.Column(db.String(20), default='usuario', nullable=False, index=True)
@@ -14,8 +14,27 @@ class Usuario(db.Model):
     activo = db.Column(db.Boolean, default=True, nullable=False)
     fecha_registro = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
 
-    jugadas = db.relationship('Jugada', backref='usuario', cascade="all, delete-orphan", lazy=True)
-    transacciones = db.relationship('Transaccion', foreign_keys='Transaccion.telefono', backref='usuario', cascade="all, delete-orphan", lazy=True)
+    jugadas = db.relationship(
+        'Jugada',
+        backref='usuario',
+        cascade="all, delete-orphan",
+        lazy=True
+    )
+
+    transacciones = db.relationship(
+        'Transaccion',
+        foreign_keys='Transaccion.telefono',
+        back_populates='usuario',
+        cascade="all, delete-orphan",
+        lazy=True
+    )
+
+    transacciones_ejecutadas = db.relationship(
+        'Transaccion',
+        foreign_keys='Transaccion.ejecutado_por',
+        back_populates='ejecutor',
+        lazy=True
+    )
 
 class SolicitudRegistro(db.Model):
     __tablename__ = 'solicitudes_registro'
@@ -82,14 +101,37 @@ class Resultado(db.Model):
 
 
 class Transaccion(db.Model):
-    """Modelo completo de movimientos financieros (Punto 8 garantizado)"""
     __tablename__ = 'transacciones'
-    
+
     id = db.Column(db.Integer, primary_key=True)
-    telefono = db.Column(db.String(20), db.ForeignKey('usuarios.telefono', ondelete='CASCADE'), nullable=False, index=True)
-    tipo = db.Column(db.String(20), nullable=False) # 'recarga', 'apuesta', 'premio', 'retiro'
+
+    telefono = db.Column(
+        db.String(20),
+        db.ForeignKey('usuarios.telefono', ondelete='CASCADE'),
+        nullable=False,
+        index=True
+    )
+
+    tipo = db.Column(db.String(20), nullable=False)
     monto = db.Column(db.Numeric(10, 2), nullable=False)
     balance_posterior = db.Column(db.Numeric(10, 2), nullable=False)
     fecha = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     referencia_id = db.Column(db.String(50), nullable=True)
-    ejecutado_por = db.Column(db.String(20), db.ForeignKey('usuarios.telefono', ondelete='SET NULL'), nullable=True)
+
+    ejecutado_por = db.Column(
+        db.String(20),
+        db.ForeignKey('usuarios.telefono', ondelete='SET NULL'),
+        nullable=True
+    )
+
+    usuario = db.relationship(
+        'Usuario',
+        foreign_keys=[telefono],
+        back_populates='transacciones'
+    )
+
+    ejecutor = db.relationship(
+        'Usuario',
+        foreign_keys=[ejecutado_por],
+        back_populates='transacciones_ejecutadas'
+    )
