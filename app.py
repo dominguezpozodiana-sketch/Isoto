@@ -36,7 +36,6 @@ with app.app_context():
 
     if not dueno:
         dueno = Usuario(
-            nombre="Creador",
             telefono="5351643042",
             rol="dueno"
         )
