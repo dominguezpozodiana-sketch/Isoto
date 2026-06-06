@@ -15,8 +15,7 @@ class Usuario(db.Model):
     fecha_registro = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
 
     jugadas = db.relationship('Jugada', backref='usuario', cascade="all, delete-orphan", lazy=True)
-    transacciones = db.relationship('Transaccion', backref='usuario', cascade="all, delete-orphan", lazy=True)
-
+    transacciones = db.relationship('Transaccion', foreign_keys='Transaccion.telefono', backref='usuario', cascade="all, delete-orphan", lazy=True)
 
 class SolicitudRegistro(db.Model):
     __tablename__ = 'solicitudes_registro'
