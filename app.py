@@ -5,7 +5,7 @@ from flask import Flask, send_from_directory
 from flask.json.provider import DefaultJSONProvider
 
 from config import Config
-from models import db
+from models import db, Usuario
 
 
 class CustomJSONProvider(DefaultJSONProvider):
