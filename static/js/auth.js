@@ -16,7 +16,7 @@ const auth = {
       
       if (res.ok) {
         localStorage.setItem('usuario', JSON.stringify(data.usuario));
-        navegar('/jugador/inicio');
+        router.navegarA('/jugador/loterias');
       } else {
         alert(data.error || 'Error al iniciar sesión');
       }
@@ -71,7 +71,7 @@ const auth = {
       if (res.ok) {
         alert(data.msg);
         localStorage.removeItem('tel_verificar');
-        navegar('/login');
+        router.navegarA('/');
       } else {
         alert(data.error || 'Código incorrecto');
       }
@@ -81,7 +81,7 @@ const auth = {
   logout: async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
     localStorage.removeItem('usuario');
-    navegar('/login');
+    router.navegarA('/');
   }
 };
 

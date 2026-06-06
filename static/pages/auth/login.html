@@ -1,0 +1,48 @@
+<div class="row justify-content-center">
+  <div class="col-md-5">
+    <div class="card shadow">
+      <div class="card-header bg-dark text-white">
+        <h4>Iniciar Sesión</h4>
+      </div>
+
+      <div class="card-body">
+        <form id="login-form">
+
+          <div class="mb-3">
+            <label>Teléfono</label>
+            <input
+              type="text"
+              name="telefono"
+              class="form-control"
+              required>
+          </div>
+
+          <div class="mb-3">
+            <label>Contraseña</label>
+            <input
+              type="password"
+              name="password"
+              class="form-control"
+              required>
+          </div>
+
+          <button
+            type="submit"
+            class="btn btn-success w-100">
+            Entrar
+          </button>
+
+        </form>
+
+        <hr>
+
+        <button
+          onclick="router.navegarA('/registro')"
+          class="btn btn-outline-primary w-100">
+          Crear cuenta
+        </button>
+
+      </div>
+    </div>
+  </div>
+</div>
