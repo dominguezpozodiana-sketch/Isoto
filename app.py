@@ -1,27 +1,36 @@
 import os
+from decimal import Decimal
+
 from flask import Flask, send_from_directory
 from flask.json.provider import DefaultJSONProvider
-from decimal import Decimal
+
 from config import Config
 from models import db
 
+
 class CustomJSONProvider(DefaultJSONProvider):
-    """Manejador personalizado para evitar que Flask rompa al procesar dinero en formato Decimal."""
     def default(self, obj):
         if isinstance(obj, Decimal):
             return float(obj)
         return super().default(obj)
 
-app = Flask(__name__, static_folder='static', static_url_path='/static')
+
+app = Flask(
+    __name__,
+    static_folder="static",
+    static_url_path="/static"
+)
+
 app.config.from_object(Config)
 
-# Asignar el serializador seguro de decimales
 app.json = CustomJSONProvider(app)
 
-# Inicializar persistencia relacional
 db.init_app(app)
 
-# Registro de Blueprints del Sistema
+with app.app_context():
+    db.create_all()
+
+
 from routes.auth import auth_bp
 from routes.jugadas import jugadas_bp
 from routes.loterias import loterias_bp
@@ -38,13 +47,30 @@ app.register_blueprint(admin_bp)
 app.register_blueprint(banca_bp)
 app.register_blueprint(reportes_bp)
 
-@app.route('/', defaults={'path': ''})
-@app.route('/<path:path>')
-def servir_spa(path):
-    if path != "" and os.path.exists(os.path.join(app.static_folder, path)):
-        return send_from_directory(app.static_folder, path)
-    return send_from_directory(app.static_folder, 'index.html')
 
-if __name__ == '__main__':
-    puerto = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=puerto, debug=False)
+@app.route("/", defaults={"path": ""})
+@app.route("/<path:path>")
+def servir_spa(path):
+    if path != "" and os.path.exists(
+        os.path.join(app.static_folder, path)
+    ):
+        return send_from_directory(
+            app.static_folder,
+            path
+        )
+
+    return send_from_directory(
+        app.static_folder,
+        "index.html"
+    )
+
+
+if __name__ == "__main__":
+    port = int(
+        os.environ.get("PORT", 5000)
+    )
+
+    app.run(
+        host="0.0.0.0",
+        port=port
+    )
