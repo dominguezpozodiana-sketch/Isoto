@@ -4,5 +4,4 @@ buildCommand = "pip install -r requirements.txt"
 
 [deploy]
 startCommand = "gunicorn --bind 0.0.0.0:5000 app:app"
-restartPolicyType = "on-failure"
-maxMissingPipelines = 5
+# Se eliminó la directiva inválida para dejar que Railway maneje los reinicios por defecto
