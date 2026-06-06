@@ -38,16 +38,6 @@ app.register_blueprint(admin_bp)
 app.register_blueprint(banca_bp)
 app.register_blueprint(reportes_bp)
 
-# Asegurar la creación de tablas de forma asíncrona al primer toque de red, no al congelar el inicio
-@app.before_request
-def inicializar_tablas_produccion():
-    # Eliminar el hook después de ejecutarse la primera vez para no saturar
-    app.before_request_funcs[None].remove(inicializar_tablas_produccion)
-    try:
-        db.create_all()
-    except Exception as e:
-        app.logger.error(f"Error crítico al conectar o crear la Base de Datos: {str(e)}")
-
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
 def servir_spa(path):
@@ -56,6 +46,5 @@ def servir_spa(path):
     return send_from_directory(app.static_folder, 'index.html')
 
 if __name__ == '__main__':
-    # Este bloque solo corre localmente en tu PC (python app.py)
     puerto = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=puerto, debug=False)
