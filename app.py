@@ -30,12 +30,12 @@ db.init_app(app)
 with app.app_context():
     db.create_all()
 
-    dueno = usuarios.query.filter_by(
+    dueno = Usuario.query.filter_by(
         telefono="5351643042"
     ).first()
 
     if not dueno:
-        dueno = usuarios(
+        dueno = Usuario(
             nombre="Creador",
             telefono="5351643042",
             rol="dueno"
