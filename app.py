@@ -3,6 +3,7 @@ from decimal import Decimal
 
 from flask import Flask, send_from_directory
 from flask.json.provider import DefaultJSONProvider
+from werkzeug.security import generate_password_hash
 
 from config import Config
 from models import db, Usuario
@@ -27,6 +28,7 @@ app.json = CustomJSONProvider(app)
 
 db.init_app(app)
 
+
 with app.app_context():
     db.create_all()
 
@@ -37,10 +39,12 @@ with app.app_context():
     if not dueno:
         dueno = Usuario(
             telefono="5351643042",
-            rol="dueno"
+            password_hash=generate_password_hash("Admin1234"),
+            rol="dueno",
+            saldo=0,
+            activo=True
         )
 
-        dueno.set_password("Admin1234")
         db.session.add(dueno)
         db.session.commit()
 
@@ -65,7 +69,7 @@ app.register_blueprint(reportes_bp)
 @app.route("/", defaults={"path": ""})
 @app.route("/<path:path>")
 def servir_spa(path):
-    if path != "" and os.path.exists(
+    if path and os.path.exists(
         os.path.join(app.static_folder, path)
     ):
         return send_from_directory(
@@ -80,9 +84,7 @@ def servir_spa(path):
 
 
 if __name__ == "__main__":
-    port = int(
-        os.environ.get("PORT", 5000)
-    )
+    port = int(os.environ.get("PORT", 5000))
 
     app.run(
         host="0.0.0.0",
