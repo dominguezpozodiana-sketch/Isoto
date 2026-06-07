@@ -1,0 +1,7 @@
+/* Estilos adicionales si se desea */
+.sidebar {
+    transition: transform 0.3s ease;
+}
+.sidebar-closed {
+    transform: translateX(-100%);
+}

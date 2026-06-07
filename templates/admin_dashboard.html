@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="flex">
+    <div id="sidebar" class="fixed top-0 left-0 h-full w-64 bg-gray-900 text-white shadow-lg z-10 sidebar-closed transition-all duration-300">
+        <div class="p-4">
+            <div class="flex justify-between items-center">
+                <span class="text-xl font-bold">Menú Administrador</span>
+                <button onclick="toggleSidebar()" class="material-icons text-white hover:text-gray-300">close</button>
+            </div>
+            <ul class="mt-6">
+                <li class="mb-3">
+                    <a href="{{ url_for('admin_dashboard') }}" class="flex items-center hover:bg-gray-700 p-2 rounded">
+                        <span class="material-icons mr-2">assignment</span> Solicitudes de registro
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+    <button onclick="toggleSidebar()" class="fixed top-4 left-4 z-20 bg-gray-800 text-white p-2 rounded-full shadow hover:bg-gray-700">
+        <span class="material-icons">menu</span>
+    </button>
+    
+    <div class="flex-1 p-6 ml-0">
+        <h1 class="text-3xl font-bold">Panel de Administrador</h1>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="mt-4 p-2 rounded text-center {% if category=='error' %}bg-red-100 text-red-700{% elif category=='info' %}bg-blue-100 text-blue-700{% else %}bg-green-100 text-green-700{% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        <div class="mt-6 bg-white rounded shadow p-4">
+            <h2 class="text-xl font-semibold mb-4">Solicitudes pendientes</h2>
+            <div class="overflow-x-auto">
+                <table class="min-w-full bg-white">
+                    <thead>
+                        <tr class="bg-gray-200 text-gray-700">
+                            <th class="py-2 px-4 border">Número</th>
+                            <th class="py-2 px-4 border">Nombre</th>
+                            <th class="py-2 px-4 border">Fecha</th>
+                            <th class="py-2 px-4 border">Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for sol in solicitudes %}
+                        <tr class="border-b hover:bg-gray-50">
+                            <td class="py-2 px-4">{{ sol.numero }}</td>
+                            <td class="py-2 px-4">{{ sol.nombre }}</td>
+                            <td class="py-2 px-4">{{ sol.tiempo.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td class="py-2 px-4">
+                                <a href="{{ url_for('enviar_otp', solicitud_id=sol.id) }}" class="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600">Enviar OTP</a>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="4" class="text-center py-4">No hay solicitudes pendientes</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="fixed bottom-0 left-0 w-full bg-white border-t flex justify-around p-2 z-10 shadow-md">
+    <a href="{{ url_for('admin_dashboard') }}" class="flex flex-col items-center text-gray-600 hover:text-blue-600">
+        <span class="material-icons">home</span>
+        <span class="text-xs">Inicio</span>
+    </a>
+    <a href="{{ url_for('logout') }}" class="flex flex-col items-center text-gray-600 hover:text-red-600">
+        <span class="material-icons">logout</span>
+        <span class="text-xs">Salir</span>
+    </a>
+</div>
+{% endblock %}

@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="flex">
+    <div id="sidebar" class="fixed top-0 left-0 h-full w-64 bg-gray-900 text-white shadow-lg z-10 sidebar-closed transition-all duration-300">
+        <div class="p-4">
+            <div class="flex justify-between items-center">
+                <span class="text-xl font-bold">Menú Usuario</span>
+                <button onclick="toggleSidebar()" class="material-icons text-white hover:text-gray-300">close</button>
+            </div>
+            <ul class="mt-6">
+                <li class="mb-3">
+                    <a href="{{ url_for('logout') }}" class="flex items-center hover:bg-gray-700 p-2 rounded">
+                        <span class="material-icons mr-2">logout</span> Cerrar sesión
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+    <button onclick="toggleSidebar()" class="fixed top-4 left-4 z-20 bg-gray-800 text-white p-2 rounded-full shadow hover:bg-gray-700">
+        <span class="material-icons">menu</span>
+    </button>
+    
+    <div class="flex-1 p-6 ml-0">
+        <h1 class="text-3xl font-bold">Bienvenido, {{ current_user.nombre }}</h1>
+        <div class="mt-6 bg-white rounded shadow p-6 text-center">
+            <p class="text-gray-600">Esta es tu área de usuario. Próximamente más opciones.</p>
+            <p class="text-sm text-gray-500 mt-2">Rol: {{ current_user.rol }}</p>
+        </div>
+    </div>
+</div>
+<div class="fixed bottom-0 left-0 w-full bg-white border-t flex justify-around p-2 z-10 shadow-md">
+    <a href="{{ url_for('user_dashboard') }}" class="flex flex-col items-center text-gray-600 hover:text-blue-600">
+        <span class="material-icons">home</span>
+        <span class="text-xs">Inicio</span>
+    </a>
+    <a href="{{ url_for('logout') }}" class="flex flex-col items-center text-gray-600 hover:text-red-600">
+        <span class="material-icons">logout</span>
+        <span class="text-xs">Salir</span>
+    </a>
+</div>
+{% endblock %}

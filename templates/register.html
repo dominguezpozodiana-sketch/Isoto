@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-md mx-auto bg-white rounded-xl shadow-md p-6 mt-10">
+    <h2 class="text-2xl font-bold text-center mb-6">Registro de usuario</h2>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="mb-4 p-2 rounded text-center {% if category=='error' %}bg-red-100 text-red-700{% else %}bg-green-100 text-green-700{% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+    <form method="POST">
+        <div class="mb-4">
+            <label class="block text-gray-700 text-sm font-bold mb-2">Número de móvil</label>
+            <div class="flex">
+                <span class="inline-flex items-center px-3 bg-gray-200 border border-r-0 rounded-l-md">+53</span>
+                <input type="tel" name="numero" required class="border rounded-r-md w-full py-2 px-3" placeholder="Ej: 51234567">
+            </div>
+        </div>
+        <div class="mb-4">
+            <label class="block text-gray-700 text-sm font-bold mb-2">Nombre de usuario</label>
+            <input type="text" name="nombre" required class="border rounded-md w-full py-2 px-3">
+        </div>
+        <div class="mb-6">
+            <label class="block text-gray-700 text-sm font-bold mb-2">Contraseña</label>
+            <input type="password" name="contrasena" required class="border rounded-md w-full py-2 px-3">
+        </div>
+        <button type="submit" class="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700">Continuar</button>
+    </form>
+    <p class="text-center text-sm text-gray-500 mt-4">¿Ya tienes cuenta? <a href="{{ url_for('login') }}" class="text-blue-500">Inicia sesión</a></p>
+</div>
+{% endblock %}
