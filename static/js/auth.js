@@ -2,21 +2,37 @@ const auth = {
   initLogin: () => {
     const form = document.getElementById('login-form');
     if (!form) return;
+
     form.onsubmit = async (e) => {
       e.preventDefault();
+
       const formData = new FormData(form);
       const payload = Object.fromEntries(formData.entries());
 
       const res = await fetch('/api/auth/login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json'
+        },
         body: JSON.stringify(payload)
       });
+
       const data = await res.json();
-      
+
       if (res.ok) {
-        localStorage.setItem('usuario', JSON.stringify(data.usuario));
-        router.navegarA('/jugador/loterias');
+        localStorage.setItem(
+          'usuario',
+          JSON.stringify(data.usuario)
+        );
+
+        if (
+          data.usuario.rol === 'dueno' ||
+          data.usuario.rol === 'admin'
+        ) {
+          router.navegarA('/admin/dashboard');
+        } else {
+          router.navegarA('/jugador/loterias');
+        }
       } else {
         alert(data.error || 'Error al iniciar sesión');
       }
@@ -26,22 +42,32 @@ const auth = {
   initRegistro: () => {
     const form = document.getElementById('registro-form');
     if (!form) return;
+
     form.onsubmit = async (e) => {
       e.preventDefault();
+
       const formData = new FormData(form);
       const payload = Object.fromEntries(formData.entries());
 
-      const res = await fetch('/api/auth/solicitud-registro', {
+      const res = await fetch('/api/auth/solicitar-registro', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json'
+        },
         body: JSON.stringify(payload)
       });
+
       const data = await res.json();
 
       if (res.ok) {
         alert(data.msg);
-        localStorage.setItem('tel_verificar', payload.telefono_whatsapp);
-        navegar('/verificar');
+
+        localStorage.setItem(
+          'tel_verificar',
+          payload.telefono
+        );
+
+        router.navegarA('/verificar');
       } else {
         alert(data.error || 'Error en registro');
       }
@@ -51,49 +77,85 @@ const auth = {
   initVerificar: () => {
     const form = document.getElementById('verificar-form');
     if (!form) return;
-    
-    // Auto-completar número si existe en el flujo
-    const telGuardado = localStorage.getItem('tel_verificar');
-    if (telGuardado) document.getElementById('v_tel').value = telGuardado;
+
+    const telGuardado =
+      localStorage.getItem('tel_verificar');
+
+    const campoTel =
+      document.getElementById('v_tel');
+
+    if (campoTel && telGuardado) {
+      campoTel.value = telGuardado;
+    }
 
     form.onsubmit = async (e) => {
       e.preventDefault();
-      const formData = new FormData(form);
-      const payload = Object.fromEntries(formData.entries());
 
-      const res = await fetch('/api/auth/verificar-codigo', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
+      const formData = new FormData(form);
+      const payload = Object.fromEntries(
+        formData.entries()
+      );
+
+      const res = await fetch(
+        '/api/auth/verificar-otp',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        }
+      );
+
       const data = await res.json();
 
       if (res.ok) {
         alert(data.msg);
-        localStorage.removeItem('tel_verificar');
+
+        localStorage.removeItem(
+          'tel_verificar'
+        );
+
         router.navegarA('/');
       } else {
-        alert(data.error || 'Código incorrecto');
+        alert(
+          data.error || 'Código incorrecto'
+        );
       }
     };
   },
 
   logout: async () => {
-    await fetch('/api/auth/logout', { method: 'POST' });
     localStorage.removeItem('usuario');
     router.navegarA('/');
   }
 };
 
-// Función auxiliar para cargar historial en la vista
 async function cargarHistorial() {
-  const res = await fetch('/api/jugadas/historial');
+  const res = await fetch(
+    '/api/jugadas/historial'
+  );
+
   const data = await res.json();
-  const tabla = document.getElementById('tabla-historial');
+
+  const tabla =
+    document.getElementById(
+      'tabla-historial'
+    );
+
   if (!tabla) return;
 
-  if (!data.historial || data.historial.length === 0) {
-    tabla.innerHTML = `<tr><td colspan="6" class="text-center">No hay apuestas registradas</td></tr>`;
+  if (
+    !data.historial ||
+    data.historial.length === 0
+  ) {
+    tabla.innerHTML = `
+      <tr>
+        <td colspan="6" class="text-center">
+          No hay apuestas registradas
+        </td>
+      </tr>
+    `;
     return;
   }
 
@@ -101,9 +163,9 @@ async function cargarHistorial() {
     <tr>
       <td>${j.id}</td>
       <td>${j.modalidad.toUpperCase()}</td>
-      <td>${j.numero_principal} ${j.numero_parle ? '- ' + j.numero_parle : ''}</td>
+      <td>${j.numero_principal}${j.numero_parle ? ' - ' + j.numero_parle : ''}</td>
       <td>$${j.monto}</td>
-      <td><span class="badge ${j.estado === 'pendiente' ? 'bg-warning' : j.estado === 'ganada' ? 'bg-success' : 'bg-danger'}">${j.estado}</span></td>
+      <td>${j.estado}</td>
       <td>$${j.monto_ganado}</td>
     </tr>
   `).join('');
