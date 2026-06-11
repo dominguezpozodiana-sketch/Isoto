@@ -4,24 +4,26 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lotería La Bolita</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body class="bg-gray-100">
-    <div class="container mx-auto p-4">
+    <div class="container">
         {% block content %}{% endblock %}
     </div>
+
     <script>
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
-            sidebar.classList.toggle('sidebar-closed');
+            if (sidebar) {
+                sidebar.classList.toggle('open');
+            }
         }
+
         function closeSidebarOnMobile() {
             if (window.innerWidth < 768) {
                 const sidebar = document.getElementById('sidebar');
-                if (sidebar && !sidebar.classList.contains('sidebar-closed')) {
-                    sidebar.classList.add('sidebar-closed');
+                if (sidebar && sidebar.classList.contains('open')) {
+                    sidebar.classList.remove('open');
                 }
             }
         }

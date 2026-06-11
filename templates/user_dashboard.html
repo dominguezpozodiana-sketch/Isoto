@@ -1,41 +1,86 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="flex">
-    <div id="sidebar" class="fixed top-0 left-0 h-full w-64 bg-gray-900 text-white shadow-lg z-10 sidebar-closed transition-all duration-300">
-        <div class="p-4">
-            <div class="flex justify-between items-center">
-                <span class="text-xl font-bold">Menú Usuario</span>
-                <button onclick="toggleSidebar()" class="material-icons text-white hover:text-gray-300">close</button>
+<div>
+    <!-- cabecera -->
+    <div class="flex">
+        <button id="menuBtn" class="menu-toggle menu-icon" onclick="toggleSidebarAnimated(event)">
+            <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path class="line" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16"></path>
+                <path class="line" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 12h16"></path>
+                <path class="line" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 18h16"></path>
+            </svg>
+        </button>
+        <h1 style="font-size: 1.875rem; font-weight: bold; margin-left: 15px;">Bienvenido, {{ current_user.nombre }}</h1>
+    </div>
+    <!-- cuerpo -->
+    <div class="flex">
+        <!-- Menú lateral -->
+        <div id="sidebar" class="sidebar">
+            <div class="sidebar-header">
+                <span class="font-bold">Menú Usuario</span>
             </div>
-            <ul class="mt-6">
-                <li class="mb-3">
-                    <a href="{{ url_for('logout') }}" class="flex items-center hover:bg-gray-700 p-2 rounded">
-                        <span class="material-icons mr-2">logout</span> Cerrar sesión
+            <ul class="sidebar-menu">
+                <li>
+                    <a href="{{ url_for('logout') }}">
+                        <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                        </svg>
+                        Cerrar sesión
                     </a>
                 </li>
             </ul>
         </div>
-    </div>
-    <button onclick="toggleSidebar()" class="fixed top-4 left-4 z-20 bg-gray-800 text-white p-2 rounded-full shadow hover:bg-gray-700">
-        <span class="material-icons">menu</span>
-    </button>
-    
-    <div class="flex-1 p-6 ml-0">
-        <h1 class="text-3xl font-bold">Bienvenido, {{ current_user.nombre }}</h1>
-        <div class="mt-6 bg-white rounded shadow p-6 text-center">
-            <p class="text-gray-600">Esta es tu área de usuario. Próximamente más opciones.</p>
-            <p class="text-sm text-gray-500 mt-2">Rol: {{ current_user.rol }}</p>
+        <div style="flex: 1; padding: 1.5rem; margin-left: 0;">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{% if category=='error' %}error{% elif category=='info' %}info{% else %}success{% endif %} mt-4">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <div class="card card-wide mt-4 text-center">
+                <p>Esta es tu área de usuario. Próximamente más opciones.</p>
+                <p class="text-sm text-gray-600 mt-2">Rol: {{ current_user.rol }}</p>
+            </div>
         </div>
     </div>
 </div>
-<div class="fixed bottom-0 left-0 w-full bg-white border-t flex justify-around p-2 z-10 shadow-md">
-    <a href="{{ url_for('user_dashboard') }}" class="flex flex-col items-center text-gray-600 hover:text-blue-600">
-        <span class="material-icons">home</span>
-        <span class="text-xs">Inicio</span>
+
+<div class="bottom-nav">
+    <a href="{{ url_for('user_dashboard') }}">
+        <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+        </svg>
+        <span>Inicio</span>
     </a>
-    <a href="{{ url_for('logout') }}" class="flex flex-col items-center text-gray-600 hover:text-red-600">
-        <span class="material-icons">logout</span>
-        <span class="text-xs">Salir</span>
+    <a href="{{ url_for('logout') }}">
+        <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+        </svg>
+        <span>Salir</span>
     </a>
 </div>
+
+<script>
+    function toggleSidebarAnimated(event) {
+        const sidebar = document.getElementById('sidebar');
+        const menuBtn = document.getElementById('menuBtn');
+        if (!sidebar) return;
+        sidebar.classList.toggle('open');
+        menuBtn.classList.toggle('open');
+        if (event) event.stopPropagation();
+    }
+    document.addEventListener('DOMContentLoaded', function() {
+        const sidebar = document.getElementById('sidebar');
+        const menuBtn = document.getElementById('menuBtn');
+        if (sidebar && sidebar.classList.contains('open')) {
+            menuBtn.classList.add('open');
+        } else if (sidebar && !sidebar.classList.contains('open')) {
+            menuBtn.classList.remove('open');
+        }
+    });
+</script>
 {% endblock %}

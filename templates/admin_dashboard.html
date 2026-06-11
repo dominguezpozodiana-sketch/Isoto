@@ -1,75 +1,104 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="flex">
-    <div id="sidebar" class="fixed top-0 left-0 h-full w-64 bg-gray-900 text-white shadow-lg z-10 sidebar-closed transition-all duration-300">
-        <div class="p-4">
-            <div class="flex justify-between items-center">
-                <span class="text-xl font-bold">Menú Administrador</span>
-                <button onclick="toggleSidebar()" class="material-icons text-white hover:text-gray-300">close</button>
+<div>
+    <!-- cabecera -->
+    <div class="flex">
+        <button id="menuBtn" class="menu-toggle menu-icon" onclick="toggleSidebarAnimated(event)">
+            <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path class="line" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16"></path>
+                <path class="line" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 12h16"></path>
+                <path class="line" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 18h16"></path>
+            </svg>
+        </button>
+        <h1 style="font-size: 1.875rem; font-weight: bold; margin-left: 15px;">Panel de Administrador</h1>
+    </div>
+    <!-- cuerpo -->
+    <div class="flex">
+        <!-- Menú lateral -->
+        <div id="sidebar" class="sidebar">
+            <div class="sidebar-header">
+                <span class="font-bold">Menú Administrador</span>
             </div>
-            <ul class="mt-6">
-                <li class="mb-3">
-                    <a href="{{ url_for('admin_dashboard') }}" class="flex items-center hover:bg-gray-700 p-2 rounded">
-                        <span class="material-icons mr-2">assignment</span> Solicitudes de registro
+            <ul class="sidebar-menu">
+                <li>
+                    <a href="{{ url_for('admin_dashboard') }}">
+                        <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        Solicitudes de registro
                     </a>
                 </li>
             </ul>
         </div>
-    </div>
-    <button onclick="toggleSidebar()" class="fixed top-4 left-4 z-20 bg-gray-800 text-white p-2 rounded-full shadow hover:bg-gray-700">
-        <span class="material-icons">menu</span>
-    </button>
-    
-    <div class="flex-1 p-6 ml-0">
-        <h1 class="text-3xl font-bold">Panel de Administrador</h1>
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="mt-4 p-2 rounded text-center {% if category=='error' %}bg-red-100 text-red-700{% elif category=='info' %}bg-blue-100 text-blue-700{% else %}bg-green-100 text-green-700{% endif %}">
-                        {{ message }}
-                    </div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
-        <div class="mt-6 bg-white rounded shadow p-4">
-            <h2 class="text-xl font-semibold mb-4">Solicitudes pendientes</h2>
-            <div class="overflow-x-auto">
-                <table class="min-w-full bg-white">
-                    <thead>
-                        <tr class="bg-gray-200 text-gray-700">
-                            <th class="py-2 px-4 border">Número</th>
-                            <th class="py-2 px-4 border">Nombre</th>
-                            <th class="py-2 px-4 border">Fecha</th>
-                            <th class="py-2 px-4 border">Acción</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for sol in solicitudes %}
-                        <tr class="border-b hover:bg-gray-50">
-                            <td class="py-2 px-4">{{ sol.numero }}</td>
-                            <td class="py-2 px-4">{{ sol.nombre }}</td>
-                            <td class="py-2 px-4">{{ sol.tiempo.strftime('%Y-%m-%d %H:%M') }}</td>
-                            <td class="py-2 px-4">
-                                <a href="{{ url_for('enviar_otp', solicitud_id=sol.id) }}" class="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600">Enviar OTP</a>
-                            </td>
-                        </tr>
-                        {% else %}
-                        <tr><td colspan="4" class="text-center py-4">No hay solicitudes pendientes</td></tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+        <div style="flex: 1; padding: 1.5rem; margin-left: 0;">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{% if category=='error' %}error{% elif category=='info' %}info{% else %}success{% endif %} mt-4">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <div class="card card-wide mt-4">
+                <h2 class="font-bold" style="font-size: 1.25rem;">Solicitudes pendientes</h2>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr><th>Número</th><th>Nombre</th><th>Fecha</th><th>Acción</th></tr>
+                        </thead>
+                        <tbody>
+                            {% for sol in solicitudes %}
+                            <tr>
+                                <td>{{ sol.numero }}</td>
+                                <td>{{ sol.nombre }}</td>
+                                <td>{{ sol.tiempo.strftime('%Y-%m-%d %H:%M') }}</td>
+                                <td><a href="https://wa.me/{{sol.numero}}?text=%C2%A1Hola!%20Bienvenido/tu%20codigo%20es%20{{sol.codigo_otp}}" class="btn-primary" style="display: inline-block; padding: 0.25rem 0.75rem; font-size: 0.875rem;">Enviar OTP</a></td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="4" class="text-center">No hay solicitudes pendientes</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
 </div>
-<div class="fixed bottom-0 left-0 w-full bg-white border-t flex justify-around p-2 z-10 shadow-md">
-    <a href="{{ url_for('admin_dashboard') }}" class="flex flex-col items-center text-gray-600 hover:text-blue-600">
-        <span class="material-icons">home</span>
-        <span class="text-xs">Inicio</span>
+
+<div class="bottom-nav">
+    <a href="{{ url_for('admin_dashboard') }}">
+        <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+        </svg>
+        <span>Inicio</span>
     </a>
-    <a href="{{ url_for('logout') }}" class="flex flex-col items-center text-gray-600 hover:text-red-600">
-        <span class="material-icons">logout</span>
-        <span class="text-xs">Salir</span>
+    <a href="{{ url_for('logout') }}">
+        <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+        </svg>
+        <span>Salir</span>
     </a>
 </div>
+
+<script>
+    function toggleSidebarAnimated(event) {
+        const sidebar = document.getElementById('sidebar');
+        const menuBtn = document.getElementById('menuBtn');
+        if (!sidebar) return;
+        sidebar.classList.toggle('open');
+        menuBtn.classList.toggle('open');
+        if (event) event.stopPropagation();
+    }
+    document.addEventListener('DOMContentLoaded', function() {
+        const sidebar = document.getElementById('sidebar');
+        const menuBtn = document.getElementById('menuBtn');
+        if (sidebar && sidebar.classList.contains('open')) {
+            menuBtn.classList.add('open');
+        } else if (sidebar && !sidebar.classList.contains('open')) {
+            menuBtn.classList.remove('open');
+        }
+    });
+</script>
 {% endblock %}
