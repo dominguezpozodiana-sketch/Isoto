@@ -55,6 +55,7 @@
                                 <td>{{ sol.nombre }}</td>
                                 <td>{{ sol.tiempo.strftime('%Y-%m-%d %H:%M') }}</td>
                                 <td><a href="https://wa.me/{{sol.numero}}?text=%C2%A1Hola!%20Bienvenido/tu%20codigo%20es%20{{sol.codigo_otp}}" class="btn-primary" style="display: inline-block; padding: 0.25rem 0.75rem; font-size: 0.875rem;">Enviar OTP</a></td>
+                                <td><a href="{{ url_for('enviar_otp', solicitud_id=sol.id) }}" class="btn-primary" style="display: inline-block; padding: 0.25rem 0.75rem; font-size: 0.875rem;">Mostrar OTP</a></td>
                             </tr>
                             {% else %}
                             <tr><td colspan="4" class="text-center">No hay solicitudes pendientes</td></tr>

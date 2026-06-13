@@ -41,3 +41,14 @@ class SolicitudRegistro(db.Model):
     codigo_otp = db.Column(db.String(6), nullable=False)
     tiempo = db.Column(db.DateTime, default=datetime.utcnow)
     estado = db.Column(db.String(20), default='pendiente')  # pendiente/aceptado/negado
+    
+class ResultadoLoteria(db.Model):
+    __tablename__ = 'resultados_loteria'
+    id = db.Column(db.Integer, primary_key=True)
+    estado = db.Column(db.String(30), nullable=False)
+    juego = db.Column(db.String(10), nullable=False)
+    sorteo = db.Column(db.String(10), nullable=False)
+    numeros = db.Column(db.String(30), nullable=False)
+    fireball = db.Column(db.String(2), nullable=True)
+    fecha_sorteo = db.Column(db.DateTime, nullable=False)
+    fecha_creacion = db.Column(db.DateTime, default=datetime.utcnow)

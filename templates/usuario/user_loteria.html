@@ -1,0 +1,109 @@
+{% extends "user_dashboard.html" %}
+
+{% block user_content %}
+<!-- Botones para seleccionar lotería -->
+<div style="display: flex; gap: 1rem; justify-content: center; margin-bottom: 2rem;">
+    <button onclick="mostrarLoteria('florida')" id="btnFlorida" class="btn-primary" style="background-color: #2563eb;">Florida</button>
+    <button onclick="mostrarLoteria('ny')" id="btnNy" class="btn-primary" style="background-color: #4b5563;">New York</button>
+    <button onclick="mostrarLoteria('georgia')" id="btnGeorgia" class="btn-primary" style="background-color: #4b5563;">Georgia</button>
+</div>
+
+<!-- Resultados de Florida (visible por defecto) -->
+<div id="resultadosFlorida" class="card text-center">
+    <h2 class="font-bold" style="font-size: 1.5rem;">Lotería de Florida</h2>
+    <p class="text-sm text-gray-600">Sorteo: 12 de junio de 2025</p>
+    <div style="margin: 1rem 0;">
+        <span class="numero-ganador">05</span>
+        <span class="numero-ganador">12</span>
+        <span class="numero-ganador">23</span>
+        <span class="numero-ganador">34</span>
+        <span class="numero-ganador">45</span>
+    </div>
+    <p>Números ganadores: 05 - 12 - 23 - 34 - 45</p>
+    <p class="text-sm text-gray-600">Reintegro: 7</p>
+</div>
+
+<!-- Resultados de New York (oculto) -->
+<div id="resultadosNy" class="card text-center" style="display: none;">
+    <h2 class="font-bold" style="font-size: 1.5rem;">Lotería de New York</h2>
+    <p class="text-sm text-gray-600">Sorteo: 12 de junio de 2025</p>
+    <div style="margin: 1rem 0;">
+        <span class="numero-ganador">08</span>
+        <span class="numero-ganador">15</span>
+        <span class="numero-ganador">27</span>
+        <span class="numero-ganador">39</span>
+        <span class="numero-ganador">42</span>
+    </div>
+    <p>Números ganadores: 08 - 15 - 27 - 39 - 42</p>
+    <p class="text-sm text-gray-600">Reintegro: 3</p>
+</div>
+
+<!-- Resultados de Georgia (oculto) -->
+<div id="resultadosGeorgia" class="card text-center" style="display: none;">
+    <h2 class="font-bold" style="font-size: 1.5rem;">Lotería de Georgia</h2>
+    <p class="text-sm text-gray-600">Sorteo: 11 de junio de 2025</p>
+    <div style="margin: 1rem 0;">
+        <span class="numero-ganador">11</span>
+        <span class="numero-ganador">22</span>
+        <span class="numero-ganador">33</span>
+        <span class="numero-ganador">44</span>
+        <span class="numero-ganador">55</span>
+    </div>
+    <p>Números ganadores: 11 - 22 - 33 - 44 - 55</p>
+    <p class="text-sm text-gray-600">Reintegro: 9</p>
+</div>
+
+<!-- Menú inferior -->
+<div class="bottom-nav">
+    <a href="{{ url_for('user_dashboard') }}">
+        <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+        </svg>
+        <span>Resultados</span>
+    </a>
+    <a href="{{ url_for('logout') }}">
+        <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+        </svg>
+        <span>Salir</span>
+    </a>
+</div>
+
+<style>
+    .numero-ganador {
+        display: inline-block;
+        background-color: #e5e7eb;
+        border-radius: 9999px;
+        width: 2.5rem;
+        height: 2.5rem;
+        line-height: 2.5rem;
+        text-align: center;
+        font-weight: bold;
+        margin: 0 0.25rem;
+        font-size: 1.125rem;
+    }
+</style>
+
+<script>
+    function mostrarLoteria(loteria) {
+        document.getElementById('resultadosFlorida').style.display = 'none';
+        document.getElementById('resultadosNy').style.display = 'none';
+        document.getElementById('resultadosGeorgia').style.display = 'none';
+        
+        document.getElementById('btnFlorida').style.backgroundColor = '#4b5563';
+        document.getElementById('btnNy').style.backgroundColor = '#4b5563';
+        document.getElementById('btnGeorgia').style.backgroundColor = '#4b5563';
+        
+        if (loteria === 'florida') {
+            document.getElementById('resultadosFlorida').style.display = 'block';
+            document.getElementById('btnFlorida').style.backgroundColor = '#2563eb';
+        } else if (loteria === 'ny') {
+            document.getElementById('resultadosNy').style.display = 'block';
+            document.getElementById('btnNy').style.backgroundColor = '#2563eb';
+        } else if (loteria === 'georgia') {
+            document.getElementById('resultadosGeorgia').style.display = 'block';
+            document.getElementById('btnGeorgia').style.backgroundColor = '#2563eb';
+        }
+    }
+</script>
+{% endblock %}

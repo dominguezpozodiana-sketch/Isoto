@@ -5,6 +5,7 @@ from flask import Flask, render_template, request, redirect, url_for, flash, ses
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from models import db, Usuario, AdminCreador, SolicitudRegistro
+from lottery_scraper import iniciar_scheduler
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'clave-super-segura-cambiar-en-produccion')
@@ -176,7 +177,8 @@ def user_dashboard():
     if current_user.rol != 'usuario':
         flash('Acceso no autorizado', 'error')
         return redirect(url_for('login'))
-    return render_template('user_dashboard.html')
+    # Ahora renderizamos la plantilla específica de lotería (que extiende user_dashboard.html)
+    return render_template('usuario/user_loteria.html')
 
 @app.route('/logout')
 @login_required
@@ -207,5 +209,10 @@ with app.app_context():
         db.session.add(admin)
     db.session.commit()
 
+# Iniciar el scheduler de scraping automático (solo una vez, no en modo debug recargado)
+
 if __name__ == '__main__':
+    if not app.debug or os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
+      iniciar_scheduler(app)   # ✅ correcto
+    
     app.run(debug=True)
