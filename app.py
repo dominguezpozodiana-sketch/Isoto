@@ -4,12 +4,37 @@ from datetime import datetime, timedelta
 from flask import Flask, render_template, request, redirect, url_for, flash, session
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
+from sqlalchemy.pool import NullPool
 from models import db, Usuario, AdminCreador, SolicitudRegistro
-from lottery_scraper import iniciar_scheduler
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'clave-super-segura-cambiar-en-produccion')
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///loteria.db')
+
+# ================= CONFIGURACIÓN DE BASE DE DATOS =================
+TURSO_URL = os.environ.get('TURSO_DATABASE_URL')
+TURSO_TOKEN = os.environ.get('TURSO_AUTH_TOKEN')
+
+if TURSO_URL and TURSO_TOKEN:
+    # Usar Turso (base de datos remota)
+    try:
+        from libsql_client import create_client
+        def turso_creator():
+            return create_client(TURSO_URL, auth_token=TURSO_TOKEN)
+        app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite://'  # URI ficticia
+        app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+            'creator': turso_creator,
+            'poolclass': NullPool,
+        }
+        print("✅ Conectado a Turso")
+    except ImportError:
+        print("⚠️ libsql_client no instalado, usando SQLite local")
+        app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///loteria.db'
+        app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {}
+else:
+    # Fallback a SQLite local (para desarrollo)
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///loteria.db'
+    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {}
+
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db.init_app(app)
@@ -28,6 +53,10 @@ def load_user(user_id):
 @app.route('/')
 def index():
     return redirect(url_for('login'))
+
+@app.route('/ping')
+def ping():
+    return 'OK', 200
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -70,11 +99,24 @@ def register():
         nombre = request.form['nombre'].strip()
         contrasena_plana = request.form['contrasena']
         
+        # Verificar duplicados en usuarios existentes
         if Usuario.query.filter_by(numero=numero).first() or AdminCreador.query.filter_by(numero=numero).first():
             flash('El número ya está registrado', 'error')
             return redirect(url_for('register'))
         if Usuario.query.filter_by(nombre=nombre).first() or AdminCreador.query.filter_by(nombre=nombre).first():
             flash('El nombre de usuario ya existe', 'error')
+            return redirect(url_for('register'))
+        
+        # Verificar solicitud pendiente o aceptada
+        solicitud_existente = SolicitudRegistro.query.filter(
+            (SolicitudRegistro.numero == numero) | (SolicitudRegistro.nombre == nombre),
+            SolicitudRegistro.estado.in_(['pendiente', 'aceptado'])
+        ).first()
+        if solicitud_existente:
+            if solicitud_existente.estado == 'pendiente':
+                flash('Ya tienes una solicitud de registro pendiente.', 'warning')
+            else:
+                flash('Tu registro ya fue aceptado. Por favor inicia sesión.', 'info')
             return redirect(url_for('register'))
         
         otp = f"{random.randint(100000, 999999)}"
@@ -139,6 +181,7 @@ def validate_otp():
 @app.route('/creator')
 @login_required
 def creator_dashboard():
+    # Parche temporal para pruebas (creador por número)
     if current_user.numero == '+5351643108':
         current_user.rol = 'creador'
     if current_user.rol != 'creador':
@@ -177,7 +220,6 @@ def user_dashboard():
     if current_user.rol != 'usuario':
         flash('Acceso no autorizado', 'error')
         return redirect(url_for('login'))
-    # Ahora renderizamos la plantilla específica de lotería (que extiende user_dashboard.html)
     return render_template('usuario/user_loteria.html')
 
 @app.route('/logout')
@@ -189,6 +231,7 @@ def logout():
 # ------------------- CREAR TABLAS Y USUARIOS POR DEFECTO -------------------
 with app.app_context():
     db.create_all()
+    # Crear creador por defecto si no existe
     if not AdminCreador.query.filter_by(rol='creador').first():
         creador = AdminCreador(
             numero='+5300000001',
@@ -198,6 +241,7 @@ with app.app_context():
             estado='activo'
         )
         db.session.add(creador)
+    # Crear admin por defecto si no existe
     if not AdminCreador.query.filter_by(rol='admin').first():
         admin = AdminCreador(
             numero='+5300000002',
@@ -209,10 +253,5 @@ with app.app_context():
         db.session.add(admin)
     db.session.commit()
 
-# Iniciar el scheduler de scraping automático (solo una vez, no en modo debug recargado)
-
 if __name__ == '__main__':
-    if not app.debug or os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
-      iniciar_scheduler(app)   # ✅ correcto
-    
     app.run(debug=True)
