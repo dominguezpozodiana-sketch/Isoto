@@ -11,8 +11,8 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'clave-super-segura-cambiar-en-produccion')
 
 # ================= CONFIGURACIÓN DE BASE DE DATOS =================
-TURSO_URL = os.environ.get('TURSO_DATABASE_URL')
-TURSO_TOKEN = os.environ.get('TURSO_AUTH_TOKEN')
+TURSO_URL = os.environ.get('libsql://loteridb-casimillonario.aws-us-east-1.turso.io')
+TURSO_TOKEN = os.environ.get('eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJpYXQiOjE3ODE4MjU0MDYsImlkIjoiMDE5ZWRkMTAtOGUwMS03ZTIzLWI0ZmMtNWVmZTEzMGQ4MzczIiwicmlkIjoiMmZkNmQyYWItNjBjYy00YjcwLTg5MWQtM2U3YzA3ZjU4ZDk4In0.GTT14Wv3vtlqobB09ZwJSDmNBZCD5dCp75KraCDESzYoWrzzDRCAmp8jumeLaGx3PGYbQL4EB5RgzaG8kJTaCQ')
 
 if TURSO_URL and TURSO_TOKEN:
     # Usar Turso (base de datos remota)
