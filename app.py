@@ -4,35 +4,19 @@ from datetime import datetime, timedelta
 from flask import Flask, render_template, request, redirect, url_for, flash, session
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
-from sqlalchemy.pool import NullPool
 from models import db, Usuario, AdminCreador, SolicitudRegistro
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'clave-super-segura-cambiar-en-produccion')
 
 # ================= CONFIGURACIÓN DE BASE DE DATOS =================
-TURSO_URL = os.environ.get('TURSO_DATABASE_URL')
-TURSO_TOKEN = os.environ.get('TURSO_AUTH_TOKEN')
-
-if TURSO_URL and TURSO_TOKEN:
-    try:
-        from libsql_experimental import create_client
-        def turso_creator():
-            return create_client(TURSO_URL, auth_token=TURSO_TOKEN)
-        app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite://'
-        app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
-            'creator': turso_creator,
-            'poolclass': NullPool,
-        }
-        print("✅ Conectado a Turso (experimental)")
-    except ImportError:
-        print("⚠️ libsql_experimental no instalado, usando SQLite local")
-        app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///loteria.db'
-        app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {}
+DATABASE_URL = os.environ.get('DATABASE_URL')
+if DATABASE_URL:
+    app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
+    print(f"✅ Conectado a PostgreSQL: {DATABASE_URL[:30]}...")
 else:
-    # Fallback a SQLite local (para desarrollo)
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///loteria.db'
-    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {}
+    print("⚠️ Usando SQLite local (sin DATABASE_URL)")
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
@@ -181,7 +165,7 @@ def validate_otp():
 @login_required
 def creator_dashboard():
     # Parche temporal para pruebas (creador por número)
-    if current_user.numero == '+5351643108':
+    if hasattr(current_user, 'numero') and current_user.numero == '+5351643108':
         current_user.rol = 'creador'
     if current_user.rol != 'creador':
         flash('Acceso no autorizado', 'error')
@@ -201,7 +185,7 @@ def admin_dashboard():
 @app.route('/enviar_otp/<int:solicitud_id>')
 @login_required
 def enviar_otp(solicitud_id):
-    if current_user.numero == '+5351643108':
+    if hasattr(current_user, 'numero') and current_user.numero == '+5351643108':
         current_user.rol = 'creador'
     if current_user.rol not in ['creador', 'admin']:
         flash('No autorizado', 'error')
