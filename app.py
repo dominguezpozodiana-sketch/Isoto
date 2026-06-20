@@ -15,19 +15,18 @@ TURSO_URL = os.environ.get('TURSO_DATABASE_URL')
 TURSO_TOKEN = os.environ.get('TURSO_AUTH_TOKEN')
 
 if TURSO_URL and TURSO_TOKEN:
-    # Usar Turso (base de datos remota)
     try:
-        from libsql_client import create_client
+        from libsql_experimental import create_client
         def turso_creator():
             return create_client(TURSO_URL, auth_token=TURSO_TOKEN)
-        app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite://'  # URI ficticia
+        app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite://'
         app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
             'creator': turso_creator,
             'poolclass': NullPool,
         }
-        print("✅ Conectado a Turso")
+        print("✅ Conectado a Turso (experimental)")
     except ImportError:
-        print("⚠️ libsql_client no instalado, usando SQLite local")
+        print("⚠️ libsql_experimental no instalado, usando SQLite local")
         app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///loteria.db'
         app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {}
 else:
